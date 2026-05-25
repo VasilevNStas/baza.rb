@@ -70,6 +70,22 @@ class TestFake < Minitest::Test
     baza.unlock('test-job', 'test-owner')
   end
 
+  def test_lock_accepts_owner_with_spaces
+    baza = BazaRb::Fake.new
+    baza.lock('pact1', 'Jeff Lebowski')
+    baza.unlock('pact1', 'Jeff Lebowski')
+  end
+
+  def test_lock_raises_when_owner_is_nil
+    error = assert_raises(RuntimeError) { BazaRb::Fake.new.lock('pact1', nil) }
+    assert_equal('The "owner" of the lock is nil', error.message)
+  end
+
+  def test_lock_raises_when_owner_is_empty
+    error = assert_raises(RuntimeError) { BazaRb::Fake.new.lock('pact1', '') }
+    assert_equal('The "owner" of the lock may not be empty', error.message)
+  end
+
   def test_recent
     baza = BazaRb::Fake.new
     id = baza.recent('test-job')
@@ -92,6 +108,22 @@ class TestFake < Minitest::Test
       baza.durable_lock(42, 'test-owner')
       baza.durable_unlock(42, 'test-owner')
     end
+  end
+
+  def test_durable_lock_accepts_owner_with_email_shape
+    baza = BazaRb::Fake.new
+    baza.durable_lock(42, 'jeff@example.com')
+    baza.durable_unlock(42, 'jeff@example.com')
+  end
+
+  def test_durable_lock_raises_when_owner_is_nil
+    error = assert_raises(RuntimeError) { BazaRb::Fake.new.durable_lock(42, nil) }
+    assert_equal('The "owner" of the lock is nil', error.message)
+  end
+
+  def test_durable_lock_raises_when_owner_is_empty
+    error = assert_raises(RuntimeError) { BazaRb::Fake.new.durable_lock(42, '') }
+    assert_equal('The "owner" of the lock may not be empty', error.message)
   end
 
   def test_durable_save_accepts_chunk_size_kwarg
