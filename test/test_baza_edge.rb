@@ -134,6 +134,56 @@ class TestBazaRbEdge < Minitest::Test
     assert_requested(:put, 'https://example.org:443/push/test-pname', times: 1)
   end
 
+  def test_enter_raises_when_pname_is_nil
+    assert_equal('The "pname" is nil', assert_raises(RuntimeError) { fake_baza.enter(nil, 'b', 'why', nil) }.message)
+  end
+
+  def test_enter_raises_when_pname_is_empty
+    assert_equal(
+      'The "pname" may not be empty',
+      assert_raises(RuntimeError) { fake_baza.enter('', 'b', 'why', nil) }.message
+    )
+  end
+
+  def test_enter_raises_when_badge_is_nil
+    assert_equal(
+      'The "badge" is nil',
+      assert_raises(RuntimeError) { fake_baza.enter('pname', nil, 'why', nil) }.message
+    )
+  end
+
+  def test_enter_raises_when_badge_is_empty
+    assert_equal(
+      'The "badge" may not be empty',
+      assert_raises(RuntimeError) { fake_baza.enter('pname', '', 'why', nil) }.message
+    )
+  end
+
+  def test_enter_raises_when_why_is_nil
+    assert_equal('The "why" is nil', assert_raises(RuntimeError) { fake_baza.enter('pname', 'b', nil, nil) }.message)
+  end
+
+  def test_enter_raises_when_why_is_empty
+    assert_equal(
+      'The "why" may not be empty',
+      assert_raises(RuntimeError) { fake_baza.enter('pname', 'b', '', nil) }.message
+    )
+  end
+
+  def test_enter_raises_when_job_is_not_integer
+    assert_equal(
+      'The "job" must be an Integer',
+      assert_raises(RuntimeError) { fake_baza.enter('pname', 'b', 'why', '1') }.message
+    )
+  end
+
+  def test_enter_raises_when_job_is_not_positive
+    assert_equal(
+      'The "job" must be positive',
+      assert_raises(RuntimeError) { fake_baza.enter('pname', 'b', 'why', 0) }.message
+    )
+  end
+
   def test_with_very_short_timeout
     WebMock.enable_net_connect!
     host = '127.0.0.1'
