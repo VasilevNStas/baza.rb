@@ -606,44 +606,29 @@ class BazaRb
     with_retries(max_tries: @retries, rescue: TimedOut, &)
   end
 
-  # Execute a block with retries on 429 status codes.
+  # Retry the HTTP request on rate-limiting (429) and server errors (>= 499).
+  #
+  # Retries on any HTTP status 429 or >= 499. The 499 code ("Client Closed
+  # Request") is emitted by upstream proxies such as nginx when they abort
+  # an in-flight request, typically because of a load-balancer or upstream
+  # timeout. From the client's point of view this is a transient server-side
+  # failure and should be retried just like 5xx responses.
   #
   # @yield The block to execute with retries
   # @return [Object] The result of the block execution
-  def await(&)
+  def retry_on(&)
     attempt = 0
     loop do
       ret = yield
-      if ret.code == 429 && attempt < @retries
+      if (ret.code == 429 || ret.code >= 499) && attempt < @retries
         attempt += 1
         seconds = @pause * (2**attempt)
-        @loog.info("Server seems to be busy, will sleep for #{seconds} (attempt no.#{attempt})...")
-        sleep(seconds) unless ENV['RACK_ENV'] == 'test'
-        next
-      end
-      return ret
-    end
-  end
-
-  # Execute a block with retries on server-side failures.
-  #
-  # Retries on any HTTP status >= 499. The 499 code ("Client Closed Request")
-  # is emitted by upstream proxies such as nginx when they abort an in-flight
-  # request, typically because of a load-balancer or upstream timeout. From
-  # the client's point of view this is a transient server-side failure and
-  # should be retried just like 5xx responses.
-  #
-  # @yield The block to execute with retries
-  # @return [Object] The result of the block execution
-  def recover(&)
-    attempt = 0
-    loop do
-      ret = yield
-      if ret.code >= 499 && attempt < @retries
-        attempt += 1
-        seconds = @pause * (2**attempt)
-        @loog.info("Server seems to be in trouble (#{ret.code}), sleep #{seconds}s (attempt no.#{attempt})...")
-        sleep(seconds) unless ENV['RACK_ENV'] == 'test'
+        if ret.code == 429
+          @loog.info("Server seems to be busy, will sleep for #{seconds} (attempt no.#{attempt})...")
+        else
+          @loog.info("Server seems to be in trouble (#{ret.code}), sleep #{seconds}s (attempt no.#{attempt})...")
+        end
+        sleep(seconds) unless @pause.zero?
         next
       end
       return ret
@@ -719,10 +704,8 @@ class BazaRb
   def get(uri, allowed = [200])
     attempt do
       checked(
-        recover do
-          await do
-            Typhoeus::Request.get(uri.to_s, headers:, connecttimeout: @timeout, timeout: @timeout)
-          end
+        retry_on do
+          Typhoeus::Request.get(uri.to_s, headers:, connecttimeout: @timeout, timeout: @timeout)
         end,
         allowed
       )
@@ -739,16 +722,14 @@ class BazaRb
   def post(uri, params, allowed = [302])
     attempt do
       checked(
-        recover do
-          await do
-            Typhoeus::Request.post(
-              uri.to_s,
-              body: params.merge('_csrf' => csrf).sort.to_h,
-              headers:,
-              connecttimeout: @timeout,
-              timeout: @timeout
-            )
-          end
+        retry_on do
+          Typhoeus::Request.post(
+            uri.to_s,
+            body: params.merge('_csrf' => csrf).sort.to_h,
+            headers:,
+            connecttimeout: @timeout,
+            timeout: @timeout
+          )
         end,
         allowed
       )
@@ -772,26 +753,24 @@ class BazaRb
         ret =
           attempt do
             checked(
-              recover do
-                await do
-                  slice = ''
-                  request = Typhoeus::Request.new(
-                    uri.to_s,
-                    method: :get,
-                    headers: headers.merge(
-                      'Accept' => '*',
-                      'Accept-Encoding' => 'gzip',
-                      'Range' => "bytes=#{File.size(file)}-"
-                    ),
-                    connecttimeout: @timeout,
-                    timeout: @timeout
-                  )
-                  request.on_body do |data|
-                    slice += data
-                  end
-                  request.run
-                  request.response
+              retry_on do
+                slice = ''
+                request = Typhoeus::Request.new(
+                  uri.to_s,
+                  method: :get,
+                  headers: headers.merge(
+                    'Accept' => '*',
+                    'Accept-Encoding' => 'gzip',
+                    'Range' => "bytes=#{File.size(file)}-"
+                  ),
+                  connecttimeout: @timeout,
+                  timeout: @timeout
+                )
+                request.on_body do |data|
+                  slice += data
                 end
+                request.run
+                request.response
               end,
               [200, 206, 204, 302]
             )
@@ -890,10 +869,8 @@ class BazaRb
           ret =
             attempt do
               checked(
-                recover do
-                  await do
-                    Typhoeus::Request.put(uri.to_s, params)
-                  end
+                retry_on do
+                  Typhoeus::Request.put(uri.to_s, params)
                 end
               )
             end
