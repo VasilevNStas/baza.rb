@@ -604,6 +604,14 @@ class TestBazaRbEdge < Minitest::Test
     )
   end
 
+  def test_push_raises_when_pname_is_invalid
+    assert_includes(assert_raises(RuntimeError) { fake_baza.push('INVALID', 'data', []) }.message, 'is not valid')
+  end
+
+  def test_push_raises_when_pname_is_too_long
+    assert_includes(assert_raises(RuntimeError) { fake_baza.push('a' * 33, 'data', []) }.message, 'is too long')
+  end
+
   def test_transfer_raises_when_amount_is_not_positive
     [0.0, -1.0, -0.000001].each do |amount|
       assert_equal(
