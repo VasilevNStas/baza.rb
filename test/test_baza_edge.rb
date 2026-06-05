@@ -49,6 +49,27 @@ class TestBazaRbEdge < Minitest::Test
     end
   end
 
+  def test_durable_place_sends_body_on_retry
+    WebMock.disable_net_connect!
+    baza = fake_baza(compress: false)
+    stub_request(:get, 'https://example.org/csrf').to_return(body: 'token')
+    calls = []
+    stub_request(:post, 'https://example.org/durable-place').to_return do |request|
+      calls << request.body
+      if calls.size < 2
+        { status: 503, body: '', headers: {} }
+      else
+        { status: 302, headers: { 'X-Zerocracy-DurableId' => '42' } }
+      end
+    end
+    Dir.mktmpdir do |dir|
+      file = File.join(dir, 'test.bin')
+      File.binwrite(file, 'hello, world!')
+      assert_equal(42, baza.durable_place('simple', file))
+      assert_equal(2, calls.size)
+    end
+  end
+
   def test_real_http
     WebMock.enable_net_connect!
     assert_equal(

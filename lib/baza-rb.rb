@@ -305,6 +305,7 @@ class BazaRb
         "The file '#{file}' is too big (#{File.size(file)} bytes) for durable_place(), use durable_save() instead"
       )
     end
+    zip = File.open(File.expand_path(file), 'rb')
     id = nil
     elapsed(@loog, level: Logger::INFO) do
       id = post(
@@ -312,12 +313,14 @@ class BazaRb
         {
           'pname' => pname,
           'file' => File.basename(file),
-          'zip' => File.open(file, 'rb')
+          'zip' => zip
         }
       ).headers['X-Zerocracy-DurableId'].to_i
       throw(:"Durable ##{id} (#{file}, #{File.size(file)} bytes) placed for job \"#{pname}\" at #{@host}")
     end
     id
+  ensure
+    zip&.close
   end
 
   # Save a single durable from local file to server.
