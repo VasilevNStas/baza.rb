@@ -49,6 +49,24 @@ class TestBazaRbEdge < Minitest::Test
     end
   end
 
+  def test_durable_place_raises_when_pname_is_invalid
+    assert_includes(
+      assert_raises(RuntimeError) { fake_baza.durable_place('INVALID', '/tmp/x') }.message,
+      'is not valid'
+    )
+  end
+
+  def test_durable_place_raises_when_pname_is_too_long
+    assert_includes(
+      assert_raises(RuntimeError) { fake_baza.durable_place('a' * 33, '/tmp/x') }.message,
+      'is too long'
+    )
+  end
+
+  def test_durable_find_raises_when_pname_is_invalid
+    assert_includes(assert_raises(RuntimeError) { fake_baza.durable_find('BAD!', 'file') }.message, 'is not valid')
+  end
+
   def test_real_http
     WebMock.enable_net_connect!
     assert_equal(
