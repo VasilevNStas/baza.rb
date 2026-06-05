@@ -315,26 +315,30 @@ class BazaRb
     raise(RuntimeError, "The name #{pname.inspect} is not valid") unless pname.match?(/\A[a-z0-9-]+\z/)
     raise(RuntimeError, "The name #{pname.inspect} is too long") if pname.length > 32
     raise(RuntimeError, 'The "file" of the durable is nil') if file.nil?
-    raise(RuntimeError, "The file '#{file}' is absent") unless File.exist?(file)
-    if File.size(file) > 1024
-      raise(
-        RuntimeError,
-        "The file '#{file}' is too big (#{File.size(file)} bytes) for durable_place(), use durable_save() instead"
-      )
-    end
     id = nil
-    elapsed(@loog, level: Logger::INFO) do
-      id = post(
-        home.append('durable-place'),
-        {
-          'pname' => pname,
-          'file' => File.basename(file),
-          'zip' => File.open(file, 'rb')
-        }
-      ).headers['X-Zerocracy-DurableId'].to_i
-      throw(:"Durable ##{id} (#{file}, #{File.size(file)} bytes) placed for job \"#{pname}\" at #{@host}")
+    File.open(file, 'rb') do |f|
+      raise(RuntimeError, "The file '#{file}' is absent") unless f.stat.file?
+      if f.size > 1024
+        raise(
+          RuntimeError,
+          "The file '#{file}' is too big (#{f.size} bytes) for durable_place(), use durable_save() instead"
+        )
+      end
+      elapsed(@loog, level: Logger::INFO) do
+        id = post(
+          home.append('durable-place'),
+          {
+            'pname' => pname,
+            'file' => File.basename(file),
+            'zip' => f
+          }
+        ).headers['X-Zerocracy-DurableId'].to_i
+        throw(:"Durable ##{id} (#{file}, #{f.size} bytes) placed for job \"#{pname}\" at #{@host}")
+      end
     end
     id
+  rescue Errno::ENOENT
+    raise(RuntimeError, "The file '#{file}' is absent")
   end
 
   # Save a single durable from local file to server.
