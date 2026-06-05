@@ -597,6 +597,26 @@ class TestBazaRbEdge < Minitest::Test
     )
   end
 
+  def test_lock_raises_when_pname_is_invalid
+    assert_includes(assert_raises(RuntimeError) { fake_baza.lock('INVALID', 'owner') }.message, 'is not valid')
+  end
+
+  def test_lock_raises_when_pname_is_too_long
+    assert_includes(assert_raises(RuntimeError) { fake_baza.lock('a' * 33, 'owner') }.message, 'is too long')
+  end
+
+  def test_unlock_raises_when_pname_is_invalid
+    assert_includes(assert_raises(RuntimeError) { fake_baza.unlock('BAD!', 'owner') }.message, 'is not valid')
+  end
+
+  def test_name_exists_raises_when_pname_is_invalid
+    assert_includes(assert_raises(RuntimeError) { fake_baza.name_exists?('with space') }.message, 'is not valid')
+  end
+
+  def test_recent_raises_when_pname_is_invalid
+    assert_includes(assert_raises(RuntimeError) { fake_baza.recent('../etc') }.message, 'is not valid')
+  end
+
   def test_push_raises_when_data_is_empty
     assert_equal(
       'The "data" of the job may not be empty',
