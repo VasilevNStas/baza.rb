@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 require 'base64'
+require 'bigdecimal'
 require 'elapsed'
 require 'fileutils'
 require 'iri'
@@ -414,7 +415,7 @@ class BazaRb
   # Transfer funds to another user.
   #
   # @param [String] recipient GitHub username of the recipient (e.g. "yegor256")
-  # @param [Float] amount The amount to transfer in Ƶ (zents)
+  # @param [Float, BigDecimal] amount The amount to transfer in Ƶ (zents)
   # @param [String] summary The description/reason for the payment
   # @param [Integer] job Optional job ID to associate with this transfer
   # @return [Integer] Receipt ID for the transaction
@@ -423,7 +424,9 @@ class BazaRb
     raise(RuntimeError, 'The "recipient" is nil') if recipient.nil?
     raise(RuntimeError, "The recipient #{recipient.inspect} is not valid") unless recipient.match?(/\A[a-zA-Z0-9-]+\z/)
     raise(RuntimeError, 'The "amount" is nil') if amount.nil?
-    raise(RuntimeError, 'The "amount" must be Float') unless amount.is_a?(Float)
+    unless amount.is_a?(Float) || amount.is_a?(BigDecimal)
+      raise(RuntimeError, 'The "amount" must be Float or BigDecimal')
+    end
     raise(RuntimeError, 'The "amount" must be positive') unless amount.positive?
     raise(RuntimeError, 'The "summary" is nil') if summary.nil?
     raise(RuntimeError, "The summary #{summary.inspect} is empty") if summary.empty?
@@ -431,12 +434,13 @@ class BazaRb
       raise(RuntimeError, 'The ID must be an Integer') unless job.is_a?(Integer)
       raise(RuntimeError, 'The ID must be positive') unless job.positive?
     end
+    amt = amount.is_a?(BigDecimal) ? amount.truncate(6).to_s('F') : format('%0.6f', amount)
     id = nil
-    body = { 'human' => recipient, 'amount' => format('%0.6f', amount), 'summary' => summary }
+    body = { 'human' => recipient, 'amount' => amt, 'summary' => summary }
     body['job'] = job unless job.nil?
     elapsed(@loog, level: Logger::INFO) do
       id = post(home.append('account').append('transfer'), body).headers['X-Zerocracy-ReceiptId'].to_i
-      throw(:"Transferred Ƶ#{format('%0.6f', amount)} to @#{recipient} at #{@host}")
+      throw(:"Transferred Ƶ#{amt} to @#{recipient} at #{@host}")
     end
     id
   end
@@ -444,7 +448,7 @@ class BazaRb
   # Pay a fee associated with a job.
   #
   # @param [String] tab The category/type of the fee (use "unknown" if not sure)
-  # @param [Float] amount The fee amount in Ƶ (zents)
+  # @param [Float, BigDecimal] amount The fee amount in Ƶ (zents)
   # @param [String] summary The description/reason for the fee
   # @param [Integer] job The ID of the job this fee is for
   # @return [Integer] Receipt ID for the fee payment
@@ -452,23 +456,26 @@ class BazaRb
   def fee(tab, amount, summary, job)
     raise(RuntimeError, 'The "tab" is nil') if tab.nil?
     raise(RuntimeError, 'The "amount" is nil') if amount.nil?
-    raise(RuntimeError, 'The "amount" must be Float') unless amount.is_a?(Float)
+    unless amount.is_a?(Float) || amount.is_a?(BigDecimal)
+      raise(RuntimeError, 'The "amount" must be Float or BigDecimal')
+    end
     raise(RuntimeError, 'The "amount" must be positive') unless amount.positive?
     raise(RuntimeError, 'The "job" is nil') if job.nil?
     raise(RuntimeError, 'The "job" must be Integer') unless job.is_a?(Integer)
     raise(RuntimeError, 'The "summary" is nil') if summary.nil?
+    amt = amount.is_a?(BigDecimal) ? amount.truncate(6).to_s('F') : format('%0.6f', amount)
     id = nil
     elapsed(@loog, level: Logger::INFO) do
       id = post(
         home.append('account').append('fee'),
         {
-          'amount' => format('%0.6f', amount),
+          'amount' => amt,
           'job' => job.to_s,
           'summary' => summary,
           'tab' => tab
         }
       ).headers['X-Zerocracy-ReceiptId'].to_i
-      throw(:"Fee Ƶ#{format('%0.6f', amount)} paid at #{@host}")
+      throw(:"Fee Ƶ#{amt} paid at #{@host}")
     end
     id
   end

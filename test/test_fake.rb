@@ -181,7 +181,7 @@ class TestFake < Minitest::Test
 
   def test_transfer_rejects_non_float_amount
     assert_equal(
-      'The "amount" must be Float',
+      'The "amount" must be Float or BigDecimal',
       assert_raises(RuntimeError) { BazaRb::Fake.new.transfer('recipient', 1, 'test-payment') }.message
     )
   end
@@ -213,7 +213,7 @@ class TestFake < Minitest::Test
 
   def test_fee_raises_when_amount_is_not_float
     assert_equal(
-      'The "amount" must be Float',
+      'The "amount" must be Float or BigDecimal',
       assert_raises(RuntimeError) { BazaRb::Fake.new.fee('unknown', 43, 'for fun', 44) }.message
     )
   end

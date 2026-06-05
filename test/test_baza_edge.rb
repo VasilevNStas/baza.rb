@@ -644,6 +644,30 @@ class TestBazaRbEdge < Minitest::Test
     end
   end
 
+  def test_transfer_works_with_bigdecimal
+    WebMock.disable_net_connect!
+    stub_request(:get, 'https://example.org/csrf').to_return(body: 'token')
+    stub_request(:post, 'https://example.org/account/transfer').to_return(
+      status: 302, headers: { 'X-Zerocracy-ReceiptId' => '7' }
+    )
+    assert_equal(7, fake_baza(compress: false).transfer('jeff', BigDecimal('1.23456789'), 'pay'))
+    assert_requested(:post, 'https://example.org/account/transfer') do |req|
+      req.body.include?('amount=1.234567')
+    end
+  end
+
+  def test_fee_works_with_bigdecimal
+    WebMock.disable_net_connect!
+    stub_request(:get, 'https://example.org/csrf').to_return(body: 'token')
+    stub_request(:post, 'https://example.org/account/fee').to_return(
+      status: 302, headers: { 'X-Zerocracy-ReceiptId' => '7' }
+    )
+    assert_equal(7, fake_baza(compress: false).fee('unknown', BigDecimal('0.00000123'), 'test-fee', 42))
+    assert_requested(:post, 'https://example.org/account/fee') do |req|
+      req.body.include?('amount=0.000001')
+    end
+  end
+
   def test_pull_raises_when_id_is_not_integer
     assert_equal('The ID of the job must be an Integer', assert_raises(RuntimeError) { fake_baza.pull(42.5) }.message)
   end
