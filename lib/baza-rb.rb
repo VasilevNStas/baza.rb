@@ -315,6 +315,7 @@ class BazaRb
     raise(RuntimeError, "The name #{pname.inspect} is not valid") unless pname.match?(/\A[a-z0-9-]+\z/)
     raise(RuntimeError, "The name #{pname.inspect} is too long") if pname.length > 32
     raise(RuntimeError, 'The "file" of the durable is nil') if file.nil?
+    raise(RuntimeError, "The file '#{file}' is a symlink") if File.lstat(file).symlink?
     id = nil
     File.open(file, 'rb') do |f|
       raise(RuntimeError, "The file '#{file}' is absent") unless f.stat.file?

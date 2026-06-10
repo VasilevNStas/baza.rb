@@ -49,17 +49,19 @@ class TestBazaRbEdge < Minitest::Test
     end
   end
 
-  def test_durable_place_rejects_symlink_to_non_regular_file
+  def test_durable_place_rejects_symlink
     WebMock.disable_net_connect!
     Dir.mktmpdir do |dir|
-      link = File.join(dir, 'target.bin')
-      File.symlink('/dev/null', link)
-      baza = fake_baza(compress: false)
-      error =
+      real = File.join(dir, 'real.bin')
+      File.binwrite(real, 'content')
+      link = File.join(dir, 'link.bin')
+      File.symlink(real, link)
+      assert_includes(
         assert_raises(RuntimeError) do
-          baza.durable_place('simple', link)
-        end
-      assert_includes(error.message, 'absent')
+          fake_baza(compress: false).durable_place('simple', link)
+        end.message,
+        'symlink'
+      )
     end
   end
 
