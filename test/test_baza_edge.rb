@@ -413,6 +413,19 @@ class TestBazaRbEdge < Minitest::Test
     end
   end
 
+  def test_download_uses_valid_accept_header
+    WebMock.disable_net_connect!
+    Dir.mktmpdir do |dir|
+      file = File.join(dir, 'download.txt')
+      stub_request(:get, 'https://example.org:443/file')
+        .with(headers: { 'Accept' => '*/*', 'Range' => 'bytes=0-' })
+        .to_return(status: 200, body: 'content', headers: {})
+      baza = BazaRb.new('example.org', 443, '000', loog: Loog::NULL, compress: false, timeout: 0.1, pause: 0)
+      baza.__send__(:download, baza.__send__(:home).append('file'), file)
+      assert_equal('content', File.read(file))
+    end
+  end
+
   # Reproduces zerocracy/baza.rb#289: BazaRb#download never retries on
   # timeout because checked() is called outside attempt. After the fix,
   # a libcurl operation_timedout on the first GET re-raises BazaRb::TimedOut
