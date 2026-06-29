@@ -226,6 +226,8 @@ class BazaRb
   def lock(pname, owner)
     raise(RuntimeError, 'The "pname" of the product is nil') if pname.nil?
     raise(RuntimeError, 'The "pname" of the product may not be empty') if pname.empty?
+    raise(RuntimeError, "The name #{pname.inspect} is not valid") unless pname.match?(/\A[a-z0-9-]+\z/)
+    raise(RuntimeError, "The name #{pname.inspect} is too long") if pname.length > 32
     raise(RuntimeError, 'The "owner" of the lock is nil') if owner.nil?
     raise(RuntimeError, 'The "owner" of the lock may not be empty') if owner.empty?
     elapsed(@loog, level: Logger::INFO) do
@@ -245,6 +247,8 @@ class BazaRb
   def unlock(pname, owner)
     raise(RuntimeError, 'The "pname" of the job is nil') if pname.nil?
     raise(RuntimeError, 'The "pname" of the job may not be empty') if pname.empty?
+    raise(RuntimeError, "The name #{pname.inspect} is not valid") unless pname.match?(/\A[a-z0-9-]+\z/)
+    raise(RuntimeError, "The name #{pname.inspect} is too long") if pname.length > 32
     raise(RuntimeError, 'The "owner" of the lock is nil') if owner.nil?
     raise(RuntimeError, 'The "owner" of the lock may not be empty') if owner.empty?
     elapsed(@loog, level: Logger::INFO) do
@@ -261,6 +265,8 @@ class BazaRb
   def recent(name)
     raise(RuntimeError, 'The "name" of the job is nil') if name.nil?
     raise(RuntimeError, 'The "name" of the job may not be empty') if name.empty?
+    raise(RuntimeError, "The name #{name.inspect} is not valid") unless name.match?(/\A[a-z0-9-]+\z/)
+    raise(RuntimeError, "The name #{name.inspect} is too long") if name.length > 32
     job = nil
     elapsed(@loog, level: Logger::INFO) do
       job = get(home.append('recent').append("#{name}.txt")).body.to_i
@@ -276,6 +282,8 @@ class BazaRb
   def name_exists?(pname)
     raise(RuntimeError, 'The "pname" of the product is nil') if pname.nil?
     raise(RuntimeError, 'The "pname" of the product may not be empty') if pname.empty?
+    raise(RuntimeError, "The name #{pname.inspect} is not valid") unless pname.match?(/\A[a-z0-9-]+\z/)
+    raise(RuntimeError, "The name #{pname.inspect} is too long") if pname.length > 32
     exists = false
     elapsed(@loog, level: Logger::INFO) do
       exists = get(home.append('exists').append(pname)).body == 'yes'
