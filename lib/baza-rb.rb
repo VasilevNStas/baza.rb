@@ -298,6 +298,8 @@ class BazaRb
   def durable_place(pname, file)
     raise(RuntimeError, 'The "pname" of the durable is nil') if pname.nil?
     raise(RuntimeError, 'The "pname" of the durable may not be empty') if pname.empty?
+    raise(RuntimeError, "The name #{pname.inspect} is not valid") unless pname.match?(/\A[a-z0-9-]+\z/)
+    raise(RuntimeError, "The name #{pname.inspect} is too long") if pname.length > 32
     raise(RuntimeError, 'The "file" of the durable is nil') if file.nil?
     raise(RuntimeError, "The file '#{file}' is absent") unless File.exist?(file)
     if File.size(file) > 1024
@@ -397,6 +399,8 @@ class BazaRb
   def durable_find(pname, file)
     raise(RuntimeError, 'The "pname" is nil') if pname.nil?
     raise(RuntimeError, 'The "pname" may not be empty') if pname.empty?
+    raise(RuntimeError, "The name #{pname.inspect} is not valid") unless pname.match?(/\A[a-z0-9-]+\z/)
+    raise(RuntimeError, "The name #{pname.inspect} is too long") if pname.length > 32
     raise(RuntimeError, 'The "file" is nil') if file.nil?
     raise(RuntimeError, 'The "file" may not be empty') if file.empty?
     id = nil
