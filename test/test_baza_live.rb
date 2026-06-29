@@ -131,7 +131,7 @@ class TestBazaLive < Minitest::Test
   end
 
   def fake_name
-    "fake#{Time.now.to_i}#{SecureRandom.hex(4)}"
+    "fake#{Time.now.to_i}#{SecureRandom.hex(16)}"
   end
 
   def connected?
