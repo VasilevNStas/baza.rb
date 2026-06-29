@@ -509,6 +509,14 @@ class BazaRb
   # @return [String] The cached result or newly computed result from the block
   # @raise [ServerFailure] If the valve operation fails
   def enter(pname, badge, why, job)
+    raise(RuntimeError, 'The "pname" is nil') if pname.nil?
+    raise(RuntimeError, 'The "pname" may not be empty') if pname.empty?
+    raise(RuntimeError, 'The "badge" is nil') if badge.nil?
+    raise(RuntimeError, 'The "badge" may not be empty') if badge.empty?
+    raise(RuntimeError, 'The "why" is nil') if why.nil?
+    raise(RuntimeError, 'The "why" may not be empty') if why.empty?
+    raise(RuntimeError, 'The "job" must be an Integer') unless job.nil? || job.is_a?(Integer)
+    raise(RuntimeError, 'The "job" must be positive') unless job.nil? || job.positive?
     elapsed(@loog, good: "Entered valve #{badge} to #{pname}") do
       ret = get(home.append('result').add(badge:), [200, 204])
       return ret.body if ret.code == 200
