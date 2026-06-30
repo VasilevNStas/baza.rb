@@ -71,7 +71,7 @@ class BazaRb
     @timeout = timeout
     @loog = loog
     @retries = retries
-    @pause = pause
+    @pause = ENV.fetch('BAZA_BACKOFF', pause).to_i
     @compress = compress
     @mutex = Mutex.new
   end
