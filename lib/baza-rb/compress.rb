@@ -17,13 +17,21 @@ require 'zlib'
 class BazaRb
   # Compression helpers.
   module Compress
+    LIMIT_UNCOMPRESSED = 100 * 1024 * 1024
+
     # Decompress gzipped data.
     #
     # @param [String] data The gzipped data to decompress
     # @return [String] The decompressed data
     # @raise [BadCompression] If the data is not valid gzip
     def unzip(data)
-      Zlib::GzipReader.new(StringIO.new(data)).read
+      unzipped = StringIO.new
+      Zlib::GzipReader.new(StringIO.new(data)).each(4096) do |chunk|
+        unzipped.write(chunk)
+        next unless unzipped.length > LIMIT_UNCOMPRESSED
+        raise(BadCompression, "Uncompressed size #{unzipped.length} exceeds limit #{LIMIT_UNCOMPRESSED}")
+      end
+      unzipped.string
     rescue Zlib::GzipFile::Error => e
       raise(BadCompression, "Failed to unzip #{data.bytesize} bytes: #{e.message}")
     end

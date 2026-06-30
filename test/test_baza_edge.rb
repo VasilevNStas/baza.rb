@@ -301,6 +301,17 @@ class TestBazaRbEdge < Minitest::Test
     end
   end
 
+  def test_unzip_rejects_compression_bomb
+    bomb = StringIO.new
+    gz = Zlib::GzipWriter.new(bomb)
+    gz.write('x' * (BazaRb::LIMIT_UNCOMPRESSED + 1))
+    gz.close
+    assert_includes(
+      assert_raises(BazaRb::BadCompression) { fake_baza.__send__(:unzip, bomb.string) }.message,
+      'exceeds limit'
+    )
+  end
+
   def test_checked_with_internal_error
     WebMock.disable_net_connect!
     stub_request(:get, 'https://example.org:443/test')
