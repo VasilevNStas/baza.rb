@@ -166,9 +166,8 @@ class TestBazaRbEdge < Minitest::Test
 
   def test_enter_raises_when_pname_is_nil
     assert_equal(
-      'The "pname" is nil', assert_raises(BazaRb::ValidationError) do
-                              fake_baza.enter(nil, 'b', 'why', nil)
-                            end.message
+      'The "pname" is nil',
+      assert_raises(BazaRb::ValidationError) { fake_baza.enter(nil, 'b', 'why', nil) }.message
     )
   end
 
@@ -195,9 +194,8 @@ class TestBazaRbEdge < Minitest::Test
 
   def test_enter_raises_when_why_is_nil
     assert_equal(
-      'The "why" is nil', assert_raises(BazaRb::ValidationError) do
-                            fake_baza.enter('pname', 'b', nil, nil)
-                          end.message
+      'The "why" is nil',
+      assert_raises(BazaRb::ValidationError) { fake_baza.enter('pname', 'b', nil, nil) }.message
     )
   end
 
@@ -841,9 +839,8 @@ class TestBazaRbEdge < Minitest::Test
   def test_transfer_raises_when_job_is_invalid
     [['1', 'The ID must be an Integer'], [0, 'The ID must be positive']].each do |job, message|
       assert_equal(
-        message, assert_raises(BazaRb::ValidationError) do
-                   fake_baza.transfer('jeff', 1.0, 'pay', job:)
-                 end.message
+        message,
+        assert_raises(BazaRb::ValidationError) { fake_baza.transfer('jeff', 1.0, 'pay', job:) }.message
       )
     end
   end
@@ -907,9 +904,8 @@ class TestBazaRbEdge < Minitest::Test
 
   def test_pull_raises_when_id_is_not_integer
     assert_equal(
-      'The ID of the job must be an Integer', assert_raises(BazaRb::ValidationError) do
-                                                fake_baza.pull(42.5)
-                                              end.message
+      'The ID of the job must be an Integer',
+      assert_raises(BazaRb::ValidationError) { fake_baza.pull(42.5) }.message
     )
   end
 
