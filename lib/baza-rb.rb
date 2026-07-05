@@ -440,10 +440,7 @@ class BazaRb
     raise(BazaRb::ValidationError, 'The "amount" must be positive') unless amount.positive?
     raise(BazaRb::ValidationError, 'The "summary" is nil') if summary.nil?
     raise(BazaRb::ValidationError, "The summary #{summary.inspect} is empty") if summary.empty?
-    unless job.nil?
-      raise(BazaRb::ValidationError, 'The ID must be an Integer') unless job.is_a?(Integer)
-      raise(BazaRb::ValidationError, 'The ID must be positive') unless job.positive?
-    end
+    valid(job) unless job.nil?
     amt = amount.is_a?(BigDecimal) ? amount.truncate(6).to_s('F') : format('%0.6f', amount)
     id = nil
     body = { 'human' => recipient, 'amount' => amt, 'summary' => summary }

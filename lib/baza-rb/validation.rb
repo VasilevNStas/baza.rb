@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Yegor Bugayenko
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Zerocracy
 # SPDX-License-Identifier: MIT
 
 # Shared validation methods for BazaRb and BazaRb::Fake.
@@ -8,10 +8,6 @@
 # Every method here raises BazaRb::ValidationError on invalid input.
 # By using the same module in both real and fake implementations, we
 # guarantee they reject the same set of invalid inputs.
-#
-# Author:: Yegor Bugayenko (yegor256@gmail.com)
-# Copyright:: Copyright (c) 2024-2026 Yegor Bugayenko
-# License:: MIT
 class BazaRb
   # Validation helpers.
   module Validation
