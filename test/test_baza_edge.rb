@@ -1119,6 +1119,21 @@ class TestBazaRbEdge < Minitest::Test
     end
   end
 
+  def test_both_reject_same_file_validation
+    fake = BazaRb::Fake.new
+    real = BazaRb.new('example.org', 443, '000', loog: Loog::NULL)
+    mthds = [[:durable_find, 'valid-pname'], [:durable_load, 1], [:durable_place, 'valid-pname']]
+    [nil, ''].each do |file|
+      mthds.each do |method, arg|
+        assert_equal(
+          assert_raises(BazaRb::ValidationError) { fake.__send__(method, arg, file) }.message,
+          assert_raises(BazaRb::ValidationError) { real.__send__(method, arg, file) }.message,
+          "Mismatch for #{method} file=#{file.inspect}"
+        )
+      end
+    end
+  end
+
   def test_enter_yields_once_on_transient_post_failure
     WebMock.disable_net_connect!
     csrf = 'swordfish'

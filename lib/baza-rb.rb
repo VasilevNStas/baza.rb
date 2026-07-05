@@ -294,12 +294,8 @@ class BazaRb
   # @return [Integer] The ID of the created durable
   # @raise [ServerFailure] If the upload fails
   def durable_place(pname, file)
-    raise(BazaRb::ValidationError, 'The "pname" of the durable is nil') if pname.nil?
-    raise(BazaRb::ValidationError, 'The "pname" of the durable may not be empty') if pname.empty?
-    raise(BazaRb::ValidationError, "The name #{pname.inspect} is not valid") unless pname.match?(/\A[a-z0-9-]+\z/)
-    raise(BazaRb::ValidationError, "The name #{pname.inspect} is too long") if pname.length > 32
-    raise(BazaRb::ValidationError, 'The "file" of the durable is nil') if file.nil?
-    raise(RuntimeError, "The file '#{file}' is absent") unless File.exist?(file)
+    valname(pname)
+    valfile(file, must_exist: true)
     if File.size(file) > 1024
       raise(
         RuntimeError,
@@ -328,11 +324,8 @@ class BazaRb
   # @param [Integer] chunk_size Maximum size of one chunk
   # @raise [ServerFailure] If the save operation fails
   def durable_save(id, file, chunk_size: DEFAULT_CHUNK_SIZE)
-    raise(BazaRb::ValidationError, 'The ID of the durable is nil') if id.nil?
-    raise(BazaRb::ValidationError, 'The ID of the durable must be an Integer') unless id.is_a?(Integer)
-    raise(BazaRb::ValidationError, 'The ID of the durable must be a positive integer') unless id.positive?
-    raise(BazaRb::ValidationError, 'The "file" of the durable is nil') if file.nil?
-    raise(RuntimeError, "The file '#{file}' is absent") unless File.exist?(file)
+    valid(id, context: 'durable')
+    valfile(file, must_exist: true)
     elapsed(@loog, level: Logger::INFO) do
       upload(home.append('durables').append(id), file, chunk_size:)
       throw(:"Durable ##{id} saved #{File.size(file)} bytes to #{@host}")
@@ -345,10 +338,8 @@ class BazaRb
   # @param [String] file The local file path to save the downloaded durable
   # @raise [ServerFailure] If the load operation fails
   def durable_load(id, file)
-    raise(BazaRb::ValidationError, 'The ID of the durable is nil') if id.nil?
-    raise(BazaRb::ValidationError, 'The ID of the durable must be an Integer') unless id.is_a?(Integer)
-    raise(BazaRb::ValidationError, 'The ID of the durable must be a positive integer') unless id.positive?
-    raise(BazaRb::ValidationError, 'The "file" of the durable is nil') if file.nil?
+    valid(id, context: 'durable')
+    valfile(file)
     elapsed(@loog, level: Logger::INFO) do
       download(home.append('durables').append(id), file)
       throw(:"Durable ##{id} loaded #{File.size(file)} bytes from #{@host}")
@@ -361,11 +352,8 @@ class BazaRb
   # @param [String] owner The owner of the lock
   # @raise [ServerFailure] If the lock operation fails
   def durable_lock(id, owner)
-    raise(BazaRb::ValidationError, 'The ID of the durable is nil') if id.nil?
-    raise(BazaRb::ValidationError, 'The ID of the durable must be an Integer') unless id.is_a?(Integer)
-    raise(BazaRb::ValidationError, 'The ID of the durable must be a positive integer') unless id.positive?
-    raise(BazaRb::ValidationError, 'The "owner" of the lock is nil') if owner.nil?
-    raise(BazaRb::ValidationError, 'The "owner" of the lock may not be empty') if owner.empty?
+    valid(id, context: 'durable')
+    valowner(owner)
     elapsed(@loog, level: Logger::INFO) do
       post(home.append('durables').append(id).append('lock'), { 'owner' => owner })
       throw(:"Durable ##{id} locked at #{@host}")
@@ -378,11 +366,8 @@ class BazaRb
   # @param [String] owner The owner of the lock
   # @raise [ServerFailure] If the unlock operation fails
   def durable_unlock(id, owner)
-    raise(BazaRb::ValidationError, 'The ID of the durable is nil') if id.nil?
-    raise(BazaRb::ValidationError, 'The ID of the durable must be an Integer') unless id.is_a?(Integer)
-    raise(BazaRb::ValidationError, 'The ID of the durable must be a positive integer') unless id.positive?
-    raise(BazaRb::ValidationError, 'The "owner" of the lock is nil') if owner.nil?
-    raise(BazaRb::ValidationError, 'The "owner" of the lock may not be empty') if owner.empty?
+    valid(id, context: 'durable')
+    valowner(owner)
     elapsed(@loog, level: Logger::INFO) do
       post(home.append('durables').append(id).append('unlock'), { 'owner' => owner })
       throw(:"Durable ##{id} unlocked at #{@host}")
@@ -395,12 +380,8 @@ class BazaRb
   # @param [String] file The file name
   # @return [Integer, nil] The ID of the durable if found, nil if not found
   def durable_find(pname, file)
-    raise(BazaRb::ValidationError, 'The "pname" is nil') if pname.nil?
-    raise(BazaRb::ValidationError, 'The "pname" may not be empty') if pname.empty?
-    raise(BazaRb::ValidationError, "The name #{pname.inspect} is not valid") unless pname.match?(/\A[a-z0-9-]+\z/)
-    raise(BazaRb::ValidationError, "The name #{pname.inspect} is too long") if pname.length > 32
-    raise(BazaRb::ValidationError, 'The "file" is nil') if file.nil?
-    raise(BazaRb::ValidationError, 'The "file" may not be empty') if file.empty?
+    valname(pname)
+    valfile(file)
     id = nil
     elapsed(@loog, level: Logger::INFO) do
       ret = get(home.append('durable-find').add(file:, pname:), [200, 404])
