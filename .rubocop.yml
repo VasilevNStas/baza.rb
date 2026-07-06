@@ -30,7 +30,6 @@ Elegant/GoodMethodName:
     - format_value
     - retry_on
     - will_respond_with
-    - test_durable_place_rejects_symlink
 Elegant/ClassInModule:
   Exclude:
     - 'lib/**/*'
