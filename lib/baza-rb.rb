@@ -16,6 +16,7 @@ require 'tago'
 require 'tempfile'
 require 'typhoeus'
 require 'zlib'
+require_relative 'baza-rb/compress'
 require_relative 'baza-rb/version'
 
 # Ruby client for the Zerocracy API.
@@ -34,6 +35,8 @@ require_relative 'baza-rb/version'
 # License:: MIT
 class BazaRb
   DEFAULT_CHUNK_SIZE = 1_000_000
+
+  include Compress
 
   # When the server failed (503).
   class ServerFailure < StandardError; end
@@ -592,32 +595,6 @@ class BazaRb
       'Connection' => 'close',
       'X-Zerocracy-Token' => @token
     }
-  end
-
-  # Decompress gzipped data.
-  #
-  # @param [String] data The gzipped data to decompress
-  # @return [String] The decompressed data
-  def unzip(data)
-    Zlib::GzipReader.new(StringIO.new(data)).read
-  rescue Zlib::GzipFile::Error => e
-    raise(BadCompression, "Failed to unzip #{data.bytesize} bytes: #{e.message}")
-  end
-
-  # Compress request parameters with gzip.
-  #
-  # @param [Hash] params The request parameters with :body and :headers keys
-  # @return [Hash] The modified parameters with compressed body and updated headers
-  def zipped(params)
-    io = StringIO.new
-    gz = Zlib::GzipWriter.new(io)
-    gz.write(params.fetch(:body))
-    gz.close
-    body = io.string
-    params.merge(
-      body:,
-      headers: params.fetch(:headers).merge({ 'Content-Encoding' => 'gzip', 'Content-Length' => body.bytesize })
-    )
   end
 
   # Build the base URI for API requests.
