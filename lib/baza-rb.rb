@@ -35,7 +35,6 @@ require_relative 'baza-rb/version'
 # License:: MIT
 class BazaRb
   DEFAULT_CHUNK_SIZE = 1_000_000
-  LIMIT_UNCOMPRESSED = 10_485_760
 
   include Compress
 

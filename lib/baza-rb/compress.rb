@@ -17,7 +17,7 @@ require 'zlib'
 class BazaRb
   # Compression helpers.
   module Compress
-    LIMIT_UNCOMPRESSED = 100 * 1024 * 1024
+    LIMIT_UNCOMPRESSED = 10_485_760
 
     # Decompress gzipped data.
     #
