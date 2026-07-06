@@ -202,7 +202,7 @@ class TestBazaRbEdge < Minitest::Test
     )
   end
 
-  def test_push_meta_uses_strict_encode64
+  def test_push_meta_uses_strict_encoding
     WebMock.disable_net_connect!
     long = 'a' * 100
     stub_request(:put, 'https://example.org:443/push/test-pname')
