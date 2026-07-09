@@ -549,6 +549,14 @@ class BazaRb
 
   private
 
+  # Calculate exponential backoff in seconds for a given attempt number.
+  #
+  # @param [Integer] attempt The attempt number (1-based)
+  # @return [Integer] The number of seconds to sleep
+  def backoff(attempt)
+    @pause * (2**attempt)
+  end
+
   # Stick host from X-Zerocracy-Host header if present.
   #
   # @param [Typhoeus::Response] ret The HTTP response containing headers
@@ -631,7 +639,7 @@ class BazaRb
       ret = yield
       if (ret.code == 429 || ret.code >= 499) && attempt < @retries
         attempt += 1
-        seconds = @pause * (2**attempt)
+        seconds = backoff(attempt)
         if ret.code == 429
           @loog.info("Server seems to be busy, will sleep for #{seconds} (attempt no.#{attempt})...")
         else
