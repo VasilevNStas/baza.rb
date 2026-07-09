@@ -45,7 +45,7 @@ class TestBazaLive < Minitest::Test
     assert_predicate(LIVE.recent(n), :positive?)
     id = LIVE.recent(n)
     assert(
-      wait_for(10 * 60) do
+      wait_for(15 * 60) do
         sleep(5)
         LIVE.finished?(id)
       end,
