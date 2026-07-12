@@ -152,6 +152,10 @@ class TestFake < Minitest::Test
     assert_equal(42, BazaRb::Fake.new.transfer('recipient', 1.0, 'test-payment', job: 42))
   end
 
+  def test_transfer_accepts_badge_kwarg
+    assert_equal(42, BazaRb::Fake.new.transfer('recipient', 1.0, 'test-payment', badge: 'pay-reward-1'))
+  end
+
   def test_transfer_rejects_unknown_keyword
     assert_raises(ArgumentError) do
       BazaRb::Fake.new.transfer('recipient', 1.0, 'test-payment', other: 42)
