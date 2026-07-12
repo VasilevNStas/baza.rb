@@ -789,6 +789,30 @@ class TestBazaRbEdge < Minitest::Test
     end
   end
 
+  def test_transfer_sends_badge
+    WebMock.disable_net_connect!
+    stub_request(:get, 'https://example.org/csrf').to_return(body: 'token')
+    stub_request(:post, 'https://example.org/account/transfer').to_return(
+      status: 302, headers: { 'X-Zerocracy-ReceiptId' => '7' }
+    )
+    assert_equal(7, fake_baza(compress: false).transfer('jeff', 1.0, 'pay', badge: 'pay-reward-99'))
+    assert_requested(:post, 'https://example.org/account/transfer') do |req|
+      req.body.include?('badge=pay-reward-99')
+    end
+  end
+
+  def test_transfer_omits_badge_when_nil
+    WebMock.disable_net_connect!
+    stub_request(:get, 'https://example.org/csrf').to_return(body: 'token')
+    stub_request(:post, 'https://example.org/account/transfer').to_return(
+      status: 302, headers: { 'X-Zerocracy-ReceiptId' => '7' }
+    )
+    assert_equal(7, fake_baza(compress: false).transfer('jeff', 1.0, 'pay'))
+    assert_requested(:post, 'https://example.org/account/transfer') do |req|
+      !req.body.include?('badge=')
+    end
+  end
+
   def test_fee_works_with_bigdecimal
     WebMock.disable_net_connect!
     stub_request(:get, 'https://example.org/csrf').to_return(body: 'token')

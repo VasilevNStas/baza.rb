@@ -436,9 +436,11 @@ class BazaRb
   # @param [Float, BigDecimal] amount The amount to transfer in Ƶ (zents)
   # @param [String] summary The description/reason for the payment
   # @param [Integer] job Optional job ID to associate with this transfer
+  # @param [String] badge Optional idempotency key; the server dedups on it,
+  #   collapsing a repeated payment into a no-op
   # @return [Integer] Receipt ID for the transaction
   # @raise [ServerFailure] If the transfer fails
-  def transfer(recipient, amount, summary, job: nil)
+  def transfer(recipient, amount, summary, job: nil, badge: nil)
     raise(RuntimeError, 'The "recipient" is nil') if recipient.nil?
     raise(RuntimeError, "The recipient #{recipient.inspect} is not valid") unless recipient.match?(/\A[a-zA-Z0-9-]+\z/)
     raise(RuntimeError, 'The "amount" is nil') if amount.nil?
@@ -456,6 +458,7 @@ class BazaRb
     id = nil
     body = { 'human' => recipient, 'amount' => amt, 'summary' => summary }
     body['job'] = job unless job.nil?
+    body['badge'] = badge unless badge.nil?
     elapsed(@loog, level: Logger::INFO) do
       id = post(home.append('account').append('transfer'), body).headers['X-Zerocracy-ReceiptId'].to_i
       throw(:"Transferred Ƶ#{amt} to @#{recipient} at #{@host}")
