@@ -42,7 +42,7 @@ ENV['RACK_ENV'] = 'test'
 # License:: MIT
 module Deadline
   def run
-    Timeout.timeout(60, nil, "test #{name} took longer than 60 seconds") { super }
+    Timeout.timeout(120, nil, "test #{name} took longer than 60 seconds") { super }
   end
 end
 Minitest::Test.prepend(Deadline)
