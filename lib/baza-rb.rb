@@ -779,7 +779,7 @@ class BazaRb
                   uri.to_s,
                   method: :get,
                   headers: headers.merge(
-                    'Accept' => '*',
+                    'Accept' => '*/*',
                     'Accept-Encoding' => 'gzip',
                     'Range' => "bytes=#{File.size(file)}-"
                   ),
