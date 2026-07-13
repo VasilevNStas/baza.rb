@@ -23,6 +23,14 @@ require_relative '../lib/baza-rb'
 # Copyright:: Copyright (c) 2024-2026 Yegor Bugayenko
 # License:: MIT
 class TestBazaRbEdge < Minitest::Test
+  def test_error_hierarchy
+    assert_operator(BazaRb::ValidationError, :<, BazaRb::Error)
+    assert_operator(BazaRb::ServerFailure, :<, BazaRb::Error)
+    assert_operator(BazaRb::TimedOut, :<, BazaRb::Error)
+    assert_operator(BazaRb::ConnectionFailed, :<, BazaRb::TimedOut)
+    assert_operator(BazaRb::BadCompression, :<, BazaRb::Error)
+  end
+
   def test_durable_place
     WebMock.disable_net_connect!
     [fake_baza(compress: true), fake_baza(compress: false)].each do |baza|
@@ -51,20 +59,24 @@ class TestBazaRbEdge < Minitest::Test
 
   def test_durable_place_raises_when_pname_is_invalid
     assert_includes(
-      assert_raises(BazaRb::Error) { fake_baza.durable_place('INVALID', '/tmp/x') }.message,
+      assert_raises(BazaRb::ValidationError) { fake_baza.durable_place('INVALID', '/tmp/x') }.message,
       'is not valid'
     )
   end
 
   def test_durable_place_raises_when_pname_is_too_long
     assert_includes(
-      assert_raises(BazaRb::Error) { fake_baza.durable_place('a' * 33, '/tmp/x') }.message,
+      assert_raises(BazaRb::ValidationError) { fake_baza.durable_place('a' * 33, '/tmp/x') }.message,
       'is too long'
     )
   end
 
   def test_durable_find_raises_when_pname_is_invalid
-    assert_includes(assert_raises(BazaRb::Error) { fake_baza.durable_find('BAD!', 'file') }.message, 'is not valid')
+    assert_includes(
+      assert_raises(BazaRb::ValidationError) do
+        fake_baza.durable_find('BAD!', 'file')
+      end.message, 'is not valid'
+    )
   end
 
   def test_real_http
@@ -104,7 +116,7 @@ class TestBazaRbEdge < Minitest::Test
 
   def test_push_rejects_non_array_meta
     assert_includes(
-      assert_raises(BazaRb::Error) do
+      assert_raises(BazaRb::ValidationError) do
         fake_baza.push('simple', 'hello, world!', 'boom!')
       end.message,
       'The "meta" of the job must be an Array'
@@ -153,52 +165,60 @@ class TestBazaRbEdge < Minitest::Test
   end
 
   def test_enter_raises_when_pname_is_nil
-    assert_equal('The "pname" is nil', assert_raises(BazaRb::Error) { fake_baza.enter(nil, 'b', 'why', nil) }.message)
+    assert_equal(
+      'The "pname" is nil', assert_raises(BazaRb::ValidationError) do
+                              fake_baza.enter(nil, 'b', 'why', nil)
+                            end.message
+    )
   end
 
   def test_enter_raises_when_pname_is_empty
     assert_equal(
       'The "pname" may not be empty',
-      assert_raises(BazaRb::Error) { fake_baza.enter('', 'b', 'why', nil) }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.enter('', 'b', 'why', nil) }.message
     )
   end
 
   def test_enter_raises_when_badge_is_nil
     assert_equal(
       'The "badge" is nil',
-      assert_raises(BazaRb::Error) { fake_baza.enter('pname', nil, 'why', nil) }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.enter('pname', nil, 'why', nil) }.message
     )
   end
 
   def test_enter_raises_when_badge_is_empty
     assert_equal(
       'The "badge" may not be empty',
-      assert_raises(BazaRb::Error) { fake_baza.enter('pname', '', 'why', nil) }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.enter('pname', '', 'why', nil) }.message
     )
   end
 
   def test_enter_raises_when_why_is_nil
-    assert_equal('The "why" is nil', assert_raises(BazaRb::Error) { fake_baza.enter('pname', 'b', nil, nil) }.message)
+    assert_equal(
+      'The "why" is nil', assert_raises(BazaRb::ValidationError) do
+                            fake_baza.enter('pname', 'b', nil, nil)
+                          end.message
+    )
   end
 
   def test_enter_raises_when_why_is_empty
     assert_equal(
       'The "why" may not be empty',
-      assert_raises(BazaRb::Error) { fake_baza.enter('pname', 'b', '', nil) }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.enter('pname', 'b', '', nil) }.message
     )
   end
 
   def test_enter_raises_when_job_is_not_integer
     assert_equal(
       'The "job" must be an Integer',
-      assert_raises(BazaRb::Error) { fake_baza.enter('pname', 'b', 'why', '1') }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.enter('pname', 'b', 'why', '1') }.message
     )
   end
 
   def test_enter_raises_when_job_is_not_positive
     assert_equal(
       'The "job" must be positive',
-      assert_raises(BazaRb::Error) { fake_baza.enter('pname', 'b', 'why', 0) }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.enter('pname', 'b', 'why', 0) }.message
     )
   end
 
@@ -734,50 +754,70 @@ class TestBazaRbEdge < Minitest::Test
   def test_lock_raises_when_owner_is_empty
     assert_equal(
       'The "owner" of the lock may not be empty',
-      assert_raises(BazaRb::Error) { fake_baza.lock('pname', '') }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.lock('pname', '') }.message
     )
   end
 
   def test_lock_raises_when_pname_is_invalid
-    assert_includes(assert_raises(BazaRb::Error) { fake_baza.lock('INVALID', 'owner') }.message, 'is not valid')
+    assert_includes(
+      assert_raises(BazaRb::ValidationError) do
+        fake_baza.lock('INVALID', 'owner')
+      end.message, 'is not valid'
+    )
   end
 
   def test_lock_raises_when_pname_is_too_long
-    assert_includes(assert_raises(BazaRb::Error) { fake_baza.lock('a' * 33, 'owner') }.message, 'is too long')
+    assert_includes(assert_raises(BazaRb::ValidationError) { fake_baza.lock('a' * 33, 'owner') }.message, 'is too long')
   end
 
   def test_unlock_raises_when_pname_is_invalid
-    assert_includes(assert_raises(BazaRb::Error) { fake_baza.unlock('BAD!', 'owner') }.message, 'is not valid')
+    assert_includes(
+      assert_raises(BazaRb::ValidationError) do
+        fake_baza.unlock('BAD!', 'owner')
+      end.message, 'is not valid'
+    )
   end
 
   def test_name_exists_raises_when_pname_is_invalid
-    assert_includes(assert_raises(BazaRb::Error) { fake_baza.name_exists?('with space') }.message, 'is not valid')
+    assert_includes(
+      assert_raises(BazaRb::ValidationError) do
+        fake_baza.name_exists?('with space')
+      end.message, 'is not valid'
+    )
   end
 
   def test_recent_raises_when_pname_is_invalid
-    assert_includes(assert_raises(BazaRb::Error) { fake_baza.recent('../etc') }.message, 'is not valid')
+    assert_includes(assert_raises(BazaRb::ValidationError) { fake_baza.recent('../etc') }.message, 'is not valid')
   end
 
   def test_push_raises_when_data_is_empty
     assert_equal(
       'The "data" of the job may not be empty',
-      assert_raises(BazaRb::Error) { fake_baza.push('pname', '', []) }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.push('pname', '', []) }.message
     )
   end
 
   def test_push_raises_when_pname_is_invalid
-    assert_includes(assert_raises(BazaRb::Error) { fake_baza.push('INVALID', 'data', []) }.message, 'is not valid')
+    assert_includes(
+      assert_raises(BazaRb::ValidationError) do
+        fake_baza.push('INVALID', 'data', [])
+      end.message, 'is not valid'
+    )
   end
 
   def test_push_raises_when_pname_is_too_long
-    assert_includes(assert_raises(BazaRb::Error) { fake_baza.push('a' * 33, 'data', []) }.message, 'is too long')
+    assert_includes(
+      assert_raises(BazaRb::ValidationError) do
+        fake_baza.push('a' * 33, 'data', [])
+      end.message, 'is too long'
+    )
   end
 
   def test_transfer_raises_when_amount_is_not_positive
     [0.0, -1.0, -0.000001].each do |amount|
       assert_equal(
         'The "amount" must be positive',
-        assert_raises(BazaRb::Error) { fake_baza.transfer('jeff', amount, 'pay') }.message
+        assert_raises(BazaRb::ValidationError) { fake_baza.transfer('jeff', amount, 'pay') }.message
       )
     end
   end
@@ -786,7 +826,7 @@ class TestBazaRbEdge < Minitest::Test
     ['', "jeff\nbad", 'jeff@example.com'].each do |recipient|
       assert_equal(
         "The recipient #{recipient.inspect} is not valid",
-        assert_raises(BazaRb::Error) { fake_baza.transfer(recipient, 1.0, 'pay') }.message
+        assert_raises(BazaRb::ValidationError) { fake_baza.transfer(recipient, 1.0, 'pay') }.message
       )
     end
   end
@@ -794,13 +834,17 @@ class TestBazaRbEdge < Minitest::Test
   def test_transfer_raises_when_summary_is_empty
     assert_equal(
       'The summary "" is empty',
-      assert_raises(BazaRb::Error) { fake_baza.transfer('jeff', 1.0, '') }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.transfer('jeff', 1.0, '') }.message
     )
   end
 
   def test_transfer_raises_when_job_is_invalid
     [['1', 'The ID must be an Integer'], [0, 'The ID must be positive']].each do |job, message|
-      assert_equal(message, assert_raises(BazaRb::Error) { fake_baza.transfer('jeff', 1.0, 'pay', job:) }.message)
+      assert_equal(
+        message, assert_raises(BazaRb::ValidationError) do
+                   fake_baza.transfer('jeff', 1.0, 'pay', job:)
+                 end.message
+      )
     end
   end
 
@@ -808,7 +852,7 @@ class TestBazaRbEdge < Minitest::Test
     [0.0, -1.0, -0.000001].each do |amount|
       assert_equal(
         'The "amount" must be positive',
-        assert_raises(BazaRb::Error) { fake_baza.fee('unknown', amount, 'pay', 42) }.message
+        assert_raises(BazaRb::ValidationError) { fake_baza.fee('unknown', amount, 'pay', 42) }.message
       )
     end
   end
@@ -862,34 +906,38 @@ class TestBazaRbEdge < Minitest::Test
   end
 
   def test_pull_raises_when_id_is_not_integer
-    assert_equal('The ID of the job must be an Integer', assert_raises(BazaRb::Error) { fake_baza.pull(42.5) }.message)
+    assert_equal(
+      'The ID of the job must be an Integer', assert_raises(BazaRb::ValidationError) do
+                                                fake_baza.pull(42.5)
+                                              end.message
+    )
   end
 
   def test_finished_raises_when_id_is_not_integer
     assert_equal(
       'The ID of the job must be an Integer',
-      assert_raises(BazaRb::Error) { fake_baza.finished?(42.5) }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.finished?(42.5) }.message
     )
   end
 
   def test_stdout_raises_when_id_is_not_integer
     assert_equal(
       'The ID of the job must be an Integer',
-      assert_raises(BazaRb::Error) { fake_baza.stdout(42.5) }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.stdout(42.5) }.message
     )
   end
 
   def test_exit_code_raises_when_id_is_not_integer
     assert_equal(
       'The ID of the job must be an Integer',
-      assert_raises(BazaRb::Error) { fake_baza.exit_code(42.5) }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.exit_code(42.5) }.message
     )
   end
 
   def test_verified_raises_when_id_is_not_integer
     assert_equal(
       'The ID of the job must be an Integer',
-      assert_raises(BazaRb::Error) { fake_baza.verified(42.5) }.message
+      assert_raises(BazaRb::ValidationError) { fake_baza.verified(42.5) }.message
     )
   end
 
