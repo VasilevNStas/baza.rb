@@ -243,6 +243,7 @@ class BazaRb::Fake
     raise(RuntimeError, 'The "amount" must be positive') unless amount.positive?
     raise(RuntimeError, 'The "job" is nil') if job.nil?
     raise(RuntimeError, 'The "job" must be Integer') unless job.is_a?(Integer)
+    raise(RuntimeError, 'The "job" must be positive') unless job.positive?
     raise(RuntimeError, 'The "summary" is nil') if summary.nil?
     42
   end
