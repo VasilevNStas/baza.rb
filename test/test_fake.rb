@@ -229,6 +229,13 @@ class TestFake < Minitest::Test
     )
   end
 
+  def test_fee_raises_when_job_is_not_positive
+    assert_equal(
+      'The "job" must be positive',
+      assert_raises(RuntimeError) { BazaRb::Fake.new.fee('unknown', 1.0, 'test', -1) }.message
+    )
+  end
+
   def test_enter
     assert_equal('test-result', BazaRb::Fake.new.enter('test-job', 'test-badge', 'test-reason', 42) { 'test-result' })
   end
