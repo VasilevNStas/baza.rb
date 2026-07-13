@@ -125,7 +125,7 @@ class BazaRb
           home.append('push').append(pname),
           file.path,
           headers.merge(
-            'X-Zerocracy-Meta' => meta.map { |v| Base64.encode64(v).delete("\n") }.join(' ')
+            'X-Zerocracy-Meta' => meta.map { |v| Base64.strict_encode64(v) }.join(' ')
           ),
           chunk_size:
         )

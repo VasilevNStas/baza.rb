@@ -202,6 +202,18 @@ class TestBazaRbEdge < Minitest::Test
     )
   end
 
+  def test_push_meta_uses_strict_encoding
+    WebMock.disable_net_connect!
+    long = 'a' * 100
+    stub_request(:put, 'https://example.org:443/push/test-pname')
+      .with(headers: { 'X-Zerocracy-Meta' => Base64.strict_encode64(long) })
+      .to_return(status: 200, body: '')
+    BazaRb.new('example.org', 443, '000', loog: Loog::NULL, compress: false, timeout: 0.1, retries: 2).push(
+      'test-pname', 'some data', [long]
+    )
+    assert_requested(:put, 'https://example.org:443/push/test-pname', times: 1)
+  end
+
   def test_with_very_short_timeout
     WebMock.enable_net_connect!
     host = '127.0.0.1'
