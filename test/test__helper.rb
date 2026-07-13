@@ -31,6 +31,18 @@ Minitest.load(:minitest_reporter)
 
 require 'minitest/autorun'
 require 'tempfile'
+require 'timeout'
 require 'webmock/minitest'
 
 ENV['RACK_ENV'] = 'test'
+
+# Cancels any test that runs longer than one minute.
+# Author:: Yegor Bugayenko (yegor256@gmail.com)
+# Copyright:: Copyright (c) 2024-2026 Yegor Bugayenko
+# License:: MIT
+module Deadline
+  def run
+    Timeout.timeout(60, nil, "test #{name} took longer than 60 seconds") { super }
+  end
+end
+Minitest::Test.prepend(Deadline)
