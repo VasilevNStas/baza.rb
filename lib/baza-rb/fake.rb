@@ -40,9 +40,9 @@ class BazaRb::Fake
   # @return [Integer] Always returns 42 as the fake job ID
   def push(name, data, meta, chunk_size: BazaRb::DEFAULT_CHUNK_SIZE) # rubocop:disable Lint/UnusedMethodArgument
     valname(name)
-    raise(RuntimeError, 'The "data" of the job is nil') if data.nil?
-    raise(RuntimeError, 'The data must be non-empty') if data.empty?
-    raise(RuntimeError, 'The meta must be an array') unless meta.is_a?(Array)
+    raise(BazaRb::ValidationError, 'The "data" of the job is nil') if data.nil?
+    raise(BazaRb::ValidationError, 'The data must be non-empty') if data.empty?
+    raise(BazaRb::ValidationError, 'The meta must be an array') unless meta.is_a?(Array)
     42
   end
 
@@ -134,8 +134,8 @@ class BazaRb::Fake
   # @return [Integer] Always returns 42 as the fake durable ID
   def durable_find(pname, file)
     valname(pname)
-    raise(RuntimeError, 'The "file" is nil') if file.nil?
-    raise(RuntimeError, 'The "file" may not be empty') if file.empty?
+    raise(BazaRb::ValidationError, 'The "file" is nil') if file.nil?
+    raise(BazaRb::ValidationError, 'The "file" may not be empty') if file.empty?
     42
   end
 
@@ -156,7 +156,7 @@ class BazaRb::Fake
   # @param [String] file The file to upload
   # @param [Integer] chunk_size Size of each chunk in bytes (accepted for signature parity with BazaRb#durable_save)
   def durable_save(id, file, chunk_size: BazaRb::DEFAULT_CHUNK_SIZE) # rubocop:disable Lint/UnusedMethodArgument
-    valid(id)
+    valid(id, context: 'durable')
     valfile(file, must_exist: true)
   end
 
@@ -165,8 +165,8 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the durable
   # @param [String] file The local file path to save the downloaded durable
   def durable_load(id, file)
-    valid(id)
-    raise(RuntimeError, 'The "file" of the durable is nil') if file.nil?
+    valid(id, context: 'durable')
+    valfile(file)
   end
 
   # Lock a single durable.
@@ -174,7 +174,7 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the durable
   # @param [String] owner The owner of the lock
   def durable_lock(id, owner)
-    valid(id)
+    valid(id, context: 'durable')
     valowner(owner)
   end
 
@@ -183,7 +183,7 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the durable
   # @param [String] owner The owner of the lock
   def durable_unlock(id, owner)
-    valid(id)
+    valid(id, context: 'durable')
     valowner(owner)
   end
 
@@ -203,17 +203,19 @@ class BazaRb::Fake
   # @param [String] badge Optional idempotency key for deduping the payment
   # @return [Integer] Always returns 42 as the fake receipt ID
   def transfer(recipient, amount, summary, job: nil, badge: nil)
-    raise(RuntimeError, 'The "recipient" is nil') if recipient.nil?
-    raise(RuntimeError, "The recipient #{recipient.inspect} is not valid") unless recipient.match?(/\A[a-zA-Z0-9-]+\z/)
-    raise(RuntimeError, 'The "amount" is nil') if amount.nil?
-    unless amount.is_a?(Float) || amount.is_a?(BigDecimal)
-      raise(RuntimeError, 'The "amount" must be Float or BigDecimal')
+    raise(BazaRb::ValidationError, 'The "recipient" is nil') if recipient.nil?
+    unless recipient.match?(/\A[a-zA-Z0-9-]+\z/)
+      raise(BazaRb::ValidationError, "The recipient #{recipient.inspect} is not valid")
     end
-    raise(RuntimeError, 'The "amount" must be positive') unless amount.positive?
-    raise(RuntimeError, 'The "summary" is nil') if summary.nil?
-    raise(RuntimeError, "The summary #{summary.inspect} is empty") if summary.empty?
-    checkid(job) unless job.nil?
-    raise(RuntimeError, 'The "badge" must be a String') if !badge.nil? && !badge.is_a?(String)
+    raise(BazaRb::ValidationError, 'The "amount" is nil') if amount.nil?
+    unless amount.is_a?(Float) || amount.is_a?(BigDecimal)
+      raise(BazaRb::ValidationError, 'The "amount" must be Float or BigDecimal')
+    end
+    raise(BazaRb::ValidationError, 'The "amount" must be positive') unless amount.positive?
+    raise(BazaRb::ValidationError, 'The "summary" is nil') if summary.nil?
+    raise(BazaRb::ValidationError, "The summary #{summary.inspect} is empty") if summary.empty?
+    valid(job) unless job.nil?
+    raise(BazaRb::ValidationError, 'The "badge" must be a String') if !badge.nil? && !badge.is_a?(String)
     42
   end
 
@@ -225,15 +227,15 @@ class BazaRb::Fake
   # @param [Integer] job The ID of the job this fee is for
   # @return [Integer] Always returns 42 as the fake receipt ID
   def fee(tab, amount, summary, job)
-    raise(RuntimeError, 'The "tab" is nil') if tab.nil?
-    raise(RuntimeError, 'The "amount" is nil') if amount.nil?
+    raise(BazaRb::ValidationError, 'The "tab" is nil') if tab.nil?
+    raise(BazaRb::ValidationError, 'The "amount" is nil') if amount.nil?
     unless amount.is_a?(Float) || amount.is_a?(BigDecimal)
-      raise(RuntimeError, 'The "amount" must be Float or BigDecimal')
+      raise(BazaRb::ValidationError, 'The "amount" must be Float or BigDecimal')
     end
-    raise(RuntimeError, 'The "amount" must be positive') unless amount.positive?
-    raise(RuntimeError, 'The "job" is nil') if job.nil?
-    raise(RuntimeError, 'The "job" must be Integer') unless job.is_a?(Integer)
-    raise(RuntimeError, 'The "summary" is nil') if summary.nil?
+    raise(BazaRb::ValidationError, 'The "amount" must be positive') unless amount.positive?
+    raise(BazaRb::ValidationError, 'The "job" is nil') if job.nil?
+    raise(BazaRb::ValidationError, 'The "job" must be Integer') unless job.is_a?(Integer)
+    raise(BazaRb::ValidationError, 'The "summary" is nil') if summary.nil?
     42
   end
 
@@ -247,8 +249,8 @@ class BazaRb::Fake
   # @return [String] Always executes and returns the block's result
   def enter(name, badge, why, job)
     valname(name)
-    raise(RuntimeError, "The badge '#{badge}' is not valid") unless badge.match?(/\A[a-zA-Z0-9_-]+\z/)
-    raise(RuntimeError, 'The reason cannot be empty') if why.empty?
+    raise(BazaRb::ValidationError, "The badge '#{badge}' is not valid") unless badge.match?(/\A[a-zA-Z0-9_-]+\z/)
+    raise(BazaRb::ValidationError, 'The reason cannot be empty') if why.empty?
     valid(job) unless job.nil?
     yield
   end
@@ -258,13 +260,5 @@ class BazaRb::Fake
   # @return [String] Always returns 'fake-csrf-token' for testing
   def csrf
     'fake-csrf-token'
-  end
-
-  private
-
-  # Do nothing, here for signature parity.
-  def checkid(job)
-    raise(RuntimeError, 'The ID must be an Integer') unless job.is_a?(Integer)
-    raise(RuntimeError, 'The ID must be positive') unless job.positive?
   end
 end
