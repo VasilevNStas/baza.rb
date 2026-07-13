@@ -2,8 +2,10 @@ PATH
   remote: .
   specs:
     baza.rb (0.0.0)
+      base64 (~> 0.3)
       elapsed (~> 0.2)
       iri (~> 0.11)
+      logger (~> 1.6)
       loog (~> 0.6)
       retries (~> 0.0)
       tago (~> 0.2)
