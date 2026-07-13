@@ -18,6 +18,8 @@ require_relative 'test__helper'
 
 require_relative '../lib/baza-rb'
 
+require_relative '../lib/baza-rb/fake'
+
 # Edge case tests using WebMock for implementation-specific behavior.
 # Author:: Yegor Bugayenko (yegor256@gmail.com)
 # Copyright:: Copyright (c) 2024-2026 Yegor Bugayenko
@@ -1036,6 +1038,48 @@ class TestBazaRbEdge < Minitest::Test
         retries + 1, received.count('1'),
         'Expected the rewind loop to stop after rewinds exceeds the retries: setting'
       )
+    end
+  end
+
+  def test_both_reject_same_pname_validation
+    fake = BazaRb::Fake.new
+    real = BazaRb.new('example.org', 443, '000', loog: Loog::NULL)
+    [nil, '', 'UPPER', 'with space', 'a' * 33].each do |pname|
+      assert_equal(
+        assert_raises(RuntimeError) { fake.push(pname, 'data', []) }.message,
+        assert_raises(RuntimeError) { real.push(pname, 'data', []) }.message,
+        "Mismatch for push pname=#{pname.inspect}"
+      )
+    end
+  end
+
+  def test_both_reject_same_id_validation
+    fake = BazaRb::Fake.new
+    real = BazaRb.new('example.org', 443, '000', loog: Loog::NULL)
+    mthds = %i[pull finished? stdout exit_code verified]
+    [nil, 'string', 0, -1].each do |id|
+      mthds.each do |method|
+        assert_equal(
+          assert_raises(RuntimeError) { fake.__send__(method, id) }.message,
+          assert_raises(RuntimeError) { real.__send__(method, id) }.message,
+          "Mismatch for #{method} id=#{id.inspect}"
+        )
+      end
+    end
+  end
+
+  def test_both_reject_same_owner_validation
+    fake = BazaRb::Fake.new
+    real = BazaRb.new('example.org', 443, '000', loog: Loog::NULL)
+    mthds = %i[lock unlock]
+    [nil, ''].each do |owner|
+      mthds.each do |method|
+        assert_equal(
+          assert_raises(RuntimeError) { fake.__send__(method, 'valid-name', owner) }.message,
+          assert_raises(RuntimeError) { real.__send__(method, 'valid-name', owner) }.message,
+          "Mismatch for #{method} owner=#{owner.inspect}"
+        )
+      end
     end
   end
 
