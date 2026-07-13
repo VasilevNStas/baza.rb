@@ -484,6 +484,7 @@ class BazaRb
     raise(RuntimeError, 'The "job" is nil') if job.nil?
     raise(RuntimeError, 'The "job" must be Integer') unless job.is_a?(Integer)
     raise(RuntimeError, 'The "summary" is nil') if summary.nil?
+    raise(RuntimeError, "The summary #{summary.inspect} is empty") if summary.empty?
     amt = amount.is_a?(BigDecimal) ? amount.truncate(6).to_s('F') : format('%0.6f', amount)
     id = nil
     elapsed(@loog, level: Logger::INFO) do
