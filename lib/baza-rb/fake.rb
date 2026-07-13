@@ -94,9 +94,6 @@ class BazaRb::Fake
   # @param [String] name The name of the job on the server
   # @param [String] owner The owner of the lock (any string)
   def lock(name, owner)
-    assert_name(name)
-    raise 'The "owner" of the lock is nil' if owner.nil?
-    raise 'The "owner" of the lock may not be empty' if owner.empty?
     checkname(name)
     checkowner(owner)
   end
@@ -106,9 +103,6 @@ class BazaRb::Fake
   # @param [String] name The name of the job on the server
   # @param [String] owner The owner of the lock (any string)
   def unlock(name, owner)
-    assert_name(name)
-    raise 'The "owner" of the lock is nil' if owner.nil?
-    raise 'The "owner" of the lock may not be empty' if owner.empty?
     checkname(name)
     checkowner(owner)
   end
@@ -178,9 +172,6 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the durable
   # @param [String] owner The owner of the lock
   def durable_lock(id, owner)
-    assert_id(id)
-    raise 'The "owner" of the lock is nil' if owner.nil?
-    raise 'The "owner" of the lock may not be empty' if owner.empty?
     checkid(id)
     checkowner(owner)
   end
@@ -190,9 +181,6 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the durable
   # @param [String] owner The owner of the lock
   def durable_unlock(id, owner)
-    assert_id(id)
-    raise 'The "owner" of the lock is nil' if owner.nil?
-    raise 'The "owner" of the lock may not be empty' if owner.empty?
     checkid(id)
     checkowner(owner)
   end
@@ -283,11 +271,6 @@ class BazaRb::Fake
     raise(RuntimeError, 'The ID must be positive') unless id.positive?
   end
 
-  def assert_file(file)
-    raise 'The file must exist' unless File.exist?(file)
-    raise 'The file must be non-empty' unless File.size(file).positive?
-  end
-  
   def checkowner(owner)
     raise(RuntimeError, 'The "owner" of the lock is nil') if owner.nil?
     raise(RuntimeError, 'The "owner" of the lock may not be empty') if owner.empty?

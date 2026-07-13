@@ -68,23 +68,31 @@ class TestFake < Minitest::Test
   end
 
   def test_lock_raises_when_owner_is_nil
-    error = assert_raises(RuntimeError) { BazaRb::Fake.new.lock('pact1', nil) }
-    assert_equal('The "owner" of the lock is nil', error.message)
+    assert_equal(
+      'The "owner" of the lock is nil',
+      assert_raises(RuntimeError) { BazaRb::Fake.new.lock('pact1', nil) }.message
+    )
   end
 
   def test_lock_raises_when_owner_is_empty
-    error = assert_raises(RuntimeError) { BazaRb::Fake.new.lock('pact1', '') }
-    assert_equal('The "owner" of the lock may not be empty', error.message)
+    assert_equal(
+      'The "owner" of the lock may not be empty',
+      assert_raises(RuntimeError) { BazaRb::Fake.new.lock('pact1', '') }.message
+    )
   end
 
   def test_unlock_raises_when_owner_is_nil
-    error = assert_raises(RuntimeError) { BazaRb::Fake.new.unlock('pact1', nil) }
-    assert_equal('The "owner" of the lock is nil', error.message)
+    assert_equal(
+      'The "owner" of the lock is nil',
+      assert_raises(RuntimeError) { BazaRb::Fake.new.unlock('pact1', nil) }.message
+    )
   end
 
   def test_unlock_raises_when_owner_is_empty
-    error = assert_raises(RuntimeError) { BazaRb::Fake.new.unlock('pact1', '') }
-    assert_equal('The "owner" of the lock may not be empty', error.message)
+    assert_equal(
+      'The "owner" of the lock may not be empty',
+      assert_raises(RuntimeError) { BazaRb::Fake.new.unlock('pact1', '') }.message
+    )
   end
 
   def test_lock_unlock_accepts_any_non_empty_owner
@@ -121,23 +129,31 @@ class TestFake < Minitest::Test
   end
 
   def test_durable_lock_raises_when_owner_is_nil
-    error = assert_raises(RuntimeError) { BazaRb::Fake.new.durable_lock(42, nil) }
-    assert_equal('The "owner" of the lock is nil', error.message)
+    assert_equal(
+      'The "owner" of the lock is nil',
+      assert_raises(RuntimeError) { BazaRb::Fake.new.durable_lock(42, nil) }.message
+    )
   end
 
   def test_durable_lock_raises_when_owner_is_empty
-    error = assert_raises(RuntimeError) { BazaRb::Fake.new.durable_lock(42, '') }
-    assert_equal('The "owner" of the lock may not be empty', error.message)
+    assert_equal(
+      'The "owner" of the lock may not be empty',
+      assert_raises(RuntimeError) { BazaRb::Fake.new.durable_lock(42, '') }.message
+    )
   end
 
   def test_durable_unlock_raises_when_owner_is_nil
-    error = assert_raises(RuntimeError) { BazaRb::Fake.new.durable_unlock(42, nil) }
-    assert_equal('The "owner" of the lock is nil', error.message)
+    assert_equal(
+      'The "owner" of the lock is nil',
+      assert_raises(RuntimeError) { BazaRb::Fake.new.durable_unlock(42, nil) }.message
+    )
   end
 
   def test_durable_unlock_raises_when_owner_is_empty
-    error = assert_raises(RuntimeError) { BazaRb::Fake.new.durable_unlock(42, '') }
-    assert_equal('The "owner" of the lock may not be empty', error.message)
+    assert_equal(
+      'The "owner" of the lock may not be empty',
+      assert_raises(RuntimeError) { BazaRb::Fake.new.durable_unlock(42, '') }.message
+    )
   end
 
   def test_durable_lock_unlock_any_owner

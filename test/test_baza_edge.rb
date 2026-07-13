@@ -819,7 +819,7 @@ class TestBazaRbEdge < Minitest::Test
       assert_raises(RuntimeError) { fake_baza.fee('unknown', 1.0, '', 42) }.message
     )
   end
-  
+
   def test_transfer_works_with_bigdecimal
     WebMock.disable_net_connect!
     stub_request(:get, 'https://example.org/csrf').to_return(body: 'token')
