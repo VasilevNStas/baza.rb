@@ -43,7 +43,7 @@ ENV['RACK_ENV'] = 'test'
 module Deadline
   def run
     max = 180
-    Timeout.timeout(120, nil, "test #{name} took longer than #{max} seconds") { super }
+    Timeout.timeout(max, nil, "test #{name} took longer than #{max} seconds") { super }
   end
 end
 Minitest::Test.prepend(Deadline)
