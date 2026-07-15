@@ -121,7 +121,7 @@ class TestBazaLive < Minitest::Test
     n = fake_name
     badge = fake_name
     assert_equal(r, LIVE.enter(n, badge, 'no reason', nil) { r })
-    assert_equal(r, LIVE.enter(n, badge, 'no reason', nil) { nil })
+    assert_equal(r, LIVE.enter(n, badge, 'no reason', nil) { 'ignored' })
   end
 
   def test_get_csrf_token

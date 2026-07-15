@@ -61,6 +61,40 @@ class TestFake < Minitest::Test
     baza.unlock('test-job', 'test-owner')
   end
 
+  def test_lock_accepts_owner_with_spaces
+    baza = BazaRb::Fake.new
+    baza.lock('pact1', 'Jeff Lebowski')
+    baza.unlock('pact1', 'Jeff Lebowski')
+  end
+
+  def test_lock_raises_when_owner_is_nil
+    assert_equal(
+      'The "owner" is nil',
+      assert_raises(BazaRb::ValidationError) { BazaRb::Fake.new.lock('pact1', nil) }.message
+    )
+  end
+
+  def test_lock_raises_when_owner_is_empty
+    assert_equal(
+      'The "owner" may not be empty',
+      assert_raises(BazaRb::ValidationError) { BazaRb::Fake.new.lock('pact1', '') }.message
+    )
+  end
+
+  def test_unlock_raises_when_owner_is_nil
+    assert_equal(
+      'The "owner" is nil',
+      assert_raises(BazaRb::ValidationError) { BazaRb::Fake.new.unlock('pact1', nil) }.message
+    )
+  end
+
+  def test_unlock_raises_when_owner_is_empty
+    assert_equal(
+      'The "owner" may not be empty',
+      assert_raises(BazaRb::ValidationError) { BazaRb::Fake.new.unlock('pact1', '') }.message
+    )
+  end
+
   def test_lock_unlock_accepts_any_non_empty_owner
     baza = BazaRb::Fake.new
     baza.lock('test-job', 'Jeff Lebowski')
@@ -86,6 +120,40 @@ class TestFake < Minitest::Test
       baza.durable_lock(42, 'test-owner')
       baza.durable_unlock(42, 'test-owner')
     end
+  end
+
+  def test_durable_lock_accepts_owner_with_email_shape
+    baza = BazaRb::Fake.new
+    baza.durable_lock(42, 'jeff@example.com')
+    baza.durable_unlock(42, 'jeff@example.com')
+  end
+
+  def test_durable_lock_raises_when_owner_is_nil
+    assert_equal(
+      'The "owner" is nil',
+      assert_raises(BazaRb::ValidationError) { BazaRb::Fake.new.durable_lock(42, nil) }.message
+    )
+  end
+
+  def test_durable_lock_raises_when_owner_is_empty
+    assert_equal(
+      'The "owner" may not be empty',
+      assert_raises(BazaRb::ValidationError) { BazaRb::Fake.new.durable_lock(42, '') }.message
+    )
+  end
+
+  def test_durable_unlock_raises_when_owner_is_nil
+    assert_equal(
+      'The "owner" is nil',
+      assert_raises(BazaRb::ValidationError) { BazaRb::Fake.new.durable_unlock(42, nil) }.message
+    )
+  end
+
+  def test_durable_unlock_raises_when_owner_is_empty
+    assert_equal(
+      'The "owner" may not be empty',
+      assert_raises(BazaRb::ValidationError) { BazaRb::Fake.new.durable_unlock(42, '') }.message
+    )
   end
 
   def test_durable_lock_unlock_any_owner
@@ -230,6 +298,13 @@ class TestFake < Minitest::Test
     assert_equal(
       'The "amount" must be positive',
       assert_raises(BazaRb::ValidationError) { BazaRb::Fake.new.fee('unknown', 0.0, 'for fun', 44) }.message
+    )
+  end
+
+  def test_fee_raises_when_job_is_not_positive
+    assert_equal(
+      'The "job" must be positive',
+      assert_raises(BazaRb::ValidationError) { BazaRb::Fake.new.fee('unknown', 1.0, 'test', -1) }.message
     )
   end
 
