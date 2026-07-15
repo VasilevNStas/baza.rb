@@ -854,6 +854,13 @@ class TestBazaRbEdge < Minitest::Test
     end
   end
 
+  def test_fee_raises_when_summary_is_empty
+    assert_equal(
+      'The summary "" is empty',
+      assert_raises(BazaRb::ValidationError) { fake_baza.fee('unknown', 1.0, '', 42) }.message
+    )
+  end
+
   def test_transfer_works_with_bigdecimal
     WebMock.disable_net_connect!
     stub_request(:get, 'https://example.org/csrf').to_return(body: 'token')
@@ -888,6 +895,13 @@ class TestBazaRbEdge < Minitest::Test
     assert_requested(:post, 'https://example.org/account/transfer') do |req|
       !req.body.include?('badge=')
     end
+  end
+
+  def test_fee_raises_when_job_is_not_positive
+    assert_equal(
+      'The "job" must be positive',
+      assert_raises(BazaRb::ValidationError) { fake_baza.fee('unknown', 1.0, 'test', -1) }.message
+    )
   end
 
   def test_fee_works_with_bigdecimal

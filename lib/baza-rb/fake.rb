@@ -233,6 +233,7 @@ class BazaRb::Fake
     raise(BazaRb::ValidationError, 'The "amount" must be positive') unless amount.positive?
     raise(BazaRb::ValidationError, 'The "job" is nil') if job.nil?
     raise(BazaRb::ValidationError, 'The "job" must be Integer') unless job.is_a?(Integer)
+    raise(BazaRb::ValidationError, 'The "job" must be positive') unless job.positive?
     raise(BazaRb::ValidationError, 'The "summary" is nil') if summary.nil?
     42
   end

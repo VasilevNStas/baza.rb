@@ -491,7 +491,9 @@ class BazaRb
     raise(ValidationError, 'The "amount" must be positive') unless amount.positive?
     raise(ValidationError, 'The "job" is nil') if job.nil?
     raise(ValidationError, 'The "job" must be Integer') unless job.is_a?(Integer)
+    raise(ValidationError, 'The "job" must be positive') unless job.positive?
     raise(ValidationError, 'The "summary" is nil') if summary.nil?
+    raise(ValidationError, "The summary #{summary.inspect} is empty") if summary.empty?
     amt = amount.is_a?(BigDecimal) ? amount.truncate(6).to_s('F') : format('%0.6f', amount)
     id = nil
     elapsed(@loog, level: Logger::INFO) do
