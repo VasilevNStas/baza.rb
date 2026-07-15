@@ -43,6 +43,12 @@ Style/StaticClass:
 Metrics/AbcSize:
   Exclude:
     - 'lib/baza-rb.rb'
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - 'lib/baza-rb.rb'
+Metrics/PerceivedComplexity:
+  Exclude:
+    - 'lib/baza-rb.rb'
 Metrics/BlockLength:
   Exclude:
     - 'lib/baza-rb.rb'
