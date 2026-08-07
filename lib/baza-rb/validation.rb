@@ -50,7 +50,7 @@ class BazaRb
 
     # Validate a `push` meta-array.
     #
-    # @param [Array, nil] meta The meta-array to validate
+    # @param [Array, nil] array The meta-array to validate
     # @param [String] context Human-readable field name for error messages
     # @raise [BazaRb::ValidationError] If validation fails
     def valarray(array, context: 'array')
