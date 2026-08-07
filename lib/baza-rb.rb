@@ -406,10 +406,6 @@ class BazaRb
     unless amount.is_a?(Float) || amount.is_a?(BigDecimal)
       raise(BazaRb::ValidationError, 'The "amount" must be Float or BigDecimal')
     end
-    raise(BazaRb::ValidationError, 'The "amount" is nil') if amount.nil?
-    unless amount.is_a?(Float) || amount.is_a?(BigDecimal)
-      raise(BazaRb::ValidationError, 'The "amount" must be Float or BigDecimal')
-    end
     raise(BazaRb::ValidationError, 'The "amount" must be positive') unless amount.positive?
     raise(BazaRb::ValidationError, 'The "summary" is nil') if summary.nil?
     raise(BazaRb::ValidationError, "The summary #{summary.inspect} is empty") if summary.empty?
