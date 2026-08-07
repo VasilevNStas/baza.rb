@@ -1148,6 +1148,40 @@ class TestBazaRbEdge < Minitest::Test
     end
   end
 
+  def test_both_reject_same_durable_id_validation
+    fake = BazaRb::Fake.new
+    real = BazaRb.new('example.org', 443, '000', loog: Loog::NULL)
+    mthds = %i[durable_load durable_lock durable_unlock]
+    [nil, 'string', 0, -1].each do |id|
+      mthds.each do |method|
+        assert_equal(
+          assert_raises(BazaRb::ValidationError) { fake.__send__(method, id, 'valid-arg') }.message,
+          assert_raises(BazaRb::ValidationError) { real.__send__(method, id, 'valid-arg') }.message,
+          "Mismatch for #{method} id=#{id.inspect}"
+        )
+      end
+    end
+  end
+
+  def test_both_reject_same_push_payload_validation
+    fake = BazaRb::Fake.new
+    real = BazaRb.new('example.org', 443, '000', loog: Loog::NULL)
+    [nil, ''].each do |data|
+      assert_equal(
+        assert_raises(BazaRb::ValidationError) { fake.push('valid-pname', data, []) }.message,
+        assert_raises(BazaRb::ValidationError) { real.push('valid-pname', data, []) }.message,
+        "Mismatch for push data=#{data.inspect}"
+      )
+    end
+    [nil, 'not-an-array'].each do |meta|
+      assert_equal(
+        assert_raises(BazaRb::ValidationError) { fake.push('valid-pname', 'data', meta) }.message,
+        assert_raises(BazaRb::ValidationError) { real.push('valid-pname', 'data', meta) }.message,
+        "Mismatch for push meta=#{meta.inspect}"
+      )
+    end
+  end
+
   def test_enter_yields_once_on_transient_post_failure
     WebMock.disable_net_connect!
     csrf = 'swordfish'

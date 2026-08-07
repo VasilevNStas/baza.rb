@@ -40,9 +40,8 @@ class BazaRb::Fake
   # @return [Integer] Always returns 42 as the fake job ID
   def push(name, data, meta, chunk_size: BazaRb::DEFAULT_CHUNK_SIZE) # rubocop:disable Lint/UnusedMethodArgument
     valname(name)
-    raise(BazaRb::ValidationError, 'The "data" of the job is nil') if data.nil?
-    raise(BazaRb::ValidationError, 'The data must be non-empty') if data.empty?
-    raise(BazaRb::ValidationError, 'The meta must be an array') unless meta.is_a?(Array)
+    valdata(data)
+    valarray(meta, context: 'meta')
     42
   end
 
@@ -51,7 +50,7 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the job on the server
   # @return [String] Returns an empty factbase export for testing
   def pull(id)
-    valid(id)
+    valnum(id)
     Factbase.new.export
   end
 
@@ -60,7 +59,7 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the job on the server
   # @return [Boolean] Always returns TRUE for testing
   def finished?(id)
-    valid(id)
+    valnum(id)
     true
   end
 
@@ -69,7 +68,7 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the job on the server
   # @return [String] The stdout, as a text
   def stdout(id)
-    valid(id)
+    valnum(id)
     'Fake stdout output'
   end
 
@@ -78,7 +77,7 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the job on the server
   # @return [Integer] The exit code
   def exit_code(id)
-    valid(id)
+    valnum(id)
     0
   end
 
@@ -87,7 +86,7 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the job on the server
   # @return [String] The verdict
   def verified(id)
-    valid(id)
+    valnum(id)
     'fake-verdict'
   end
 
@@ -156,7 +155,7 @@ class BazaRb::Fake
   # @param [String] file The file to upload
   # @param [Integer] chunk_size Size of each chunk in bytes (accepted for signature parity with BazaRb#durable_save)
   def durable_save(id, file, chunk_size: BazaRb::DEFAULT_CHUNK_SIZE) # rubocop:disable Lint/UnusedMethodArgument
-    valid(id, context: 'durable')
+    valnum(id, context: 'durable')
     valfile(file, must_exist: true)
   end
 
@@ -165,7 +164,7 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the durable
   # @param [String] file The local file path to save the downloaded durable
   def durable_load(id, file)
-    valid(id, context: 'durable')
+    valnum(id, context: 'durable')
     valfile(file)
   end
 
@@ -174,7 +173,7 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the durable
   # @param [String] owner The owner of the lock
   def durable_lock(id, owner)
-    valid(id, context: 'durable')
+    valnum(id, context: 'durable')
     valowner(owner)
   end
 
@@ -183,7 +182,7 @@ class BazaRb::Fake
   # @param [Integer] id The ID of the durable
   # @param [String] owner The owner of the lock
   def durable_unlock(id, owner)
-    valid(id, context: 'durable')
+    valnum(id, context: 'durable')
     valowner(owner)
   end
 
@@ -214,7 +213,7 @@ class BazaRb::Fake
     raise(BazaRb::ValidationError, 'The "amount" must be positive') unless amount.positive?
     raise(BazaRb::ValidationError, 'The "summary" is nil') if summary.nil?
     raise(BazaRb::ValidationError, "The summary #{summary.inspect} is empty") if summary.empty?
-    valid(job) unless job.nil?
+    valnum(job) unless job.nil?
     raise(BazaRb::ValidationError, 'The "badge" must be a String') if !badge.nil? && !badge.is_a?(String)
     42
   end
@@ -252,7 +251,7 @@ class BazaRb::Fake
     valname(name)
     raise(BazaRb::ValidationError, "The badge '#{badge}' is not valid") unless badge.match?(/\A[a-zA-Z0-9_-]+\z/)
     raise(BazaRb::ValidationError, 'The reason cannot be empty') if why.empty?
-    valid(job) unless job.nil?
+    valnum(job) unless job.nil?
     yield
   end
 

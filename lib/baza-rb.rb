@@ -41,7 +41,7 @@ class BazaRb
   include Validation
 
   # When an invalid argument is provided.
-  class ValidationError < StandardError; end
+  class ValidationError < RuntimeError; end
 
   # When the server failed (503).
   class ServerFailure < StandardError; end
@@ -116,10 +116,8 @@ class BazaRb
   # @raise [ServerFailure] If the push operation fails
   def push(pname, data, meta, chunk_size: DEFAULT_CHUNK_SIZE)
     valname(pname, context: 'name')
-    raise(BazaRb::ValidationError, 'The "data" of the job is nil') if data.nil?
-    raise(BazaRb::ValidationError, 'The "data" of the job may not be empty') if data.empty?
-    raise(BazaRb::ValidationError, 'The "meta" of the job is nil') if meta.nil?
-    raise(BazaRb::ValidationError, 'The "meta" of the job must be an Array') unless meta.is_a?(Array)
+    valdata(data)
+    valarray(meta, context: 'meta')
     elapsed(@loog, level: Logger::INFO) do
       Tempfile.open do |file|
         File.binwrite(file.path, data)
@@ -142,7 +140,7 @@ class BazaRb
   # @return [String] Binary data of the factbase (can be saved to file)
   # @raise [ServerFailure] If the job doesn't exist or pull fails
   def pull(id)
-    valid(id)
+    valnum(id)
     data = ''
     elapsed(@loog, level: Logger::INFO) do
       Tempfile.open do |file|
@@ -160,7 +158,7 @@ class BazaRb
   # @return [Boolean] TRUE if the job has completed execution, FALSE otherwise
   # @raise [ServerFailure] If the job doesn't exist
   def finished?(id)
-    valid(id)
+    valnum(id)
     fin = false
     elapsed(@loog, level: Logger::INFO) do
       ret = get(home.append('finished').append(id))
@@ -176,7 +174,7 @@ class BazaRb
   # @return [String] The stdout, as a text
   # @raise [ServerFailure] If the job doesn't exist or retrieval fails
   def stdout(id)
-    valid(id)
+    valnum(id)
     stdout = ''
     elapsed(@loog, level: Logger::INFO) do
       stdout = get(home.append('stdout').append("#{id}.txt")).body
@@ -191,7 +189,7 @@ class BazaRb
   # @return [Integer] The exit code
   # @raise [ServerFailure] If the job doesn't exist or retrieval fails
   def exit_code(id)
-    valid(id)
+    valnum(id)
     code = 0
     elapsed(@loog, level: Logger::INFO) do
       code = get(home.append('exit').append("#{id}.txt")).body.to_i
@@ -206,7 +204,7 @@ class BazaRb
   # @return [String] The verdict
   # @raise [ServerFailure] If the job doesn't exist or retrieval fails
   def verified(id)
-    valid(id)
+    valnum(id)
     verdict = ''
     elapsed(@loog, level: Logger::INFO) do
       verdict = get(home.append('jobs').append(id).append('verified.txt')).body
@@ -222,7 +220,7 @@ class BazaRb
   # @raise [RuntimeError] If the name is already locked
   # @raise [ServerFailure] If the lock operation fails
   def lock(pname, owner)
-    valname(pname, context: 'pname of the product')
+    valname(pname, context: 'name')
     valowner(owner)
     elapsed(@loog, level: Logger::INFO) do
       throw(:"Product name #{pname.inspect} locked at #{@host}") if post(
@@ -239,7 +237,7 @@ class BazaRb
   # @param [String] owner The owner of the lock (any string)
   # @raise [ServerFailure] If the unlock operation fails
   def unlock(pname, owner)
-    valname(pname, context: 'pname of the job')
+    valname(pname, context: 'name')
     valowner(owner)
     elapsed(@loog, level: Logger::INFO) do
       post(home.append('unlock').append(pname), { 'owner' => owner })
@@ -253,10 +251,7 @@ class BazaRb
   # @return [Integer] The ID of the job on the server
   # @raise [ServerFailure] If the job doesn't exist or retrieval fails
   def recent(name)
-    raise(BazaRb::ValidationError, 'The "name" of the job is nil') if name.nil?
-    raise(BazaRb::ValidationError, 'The "name" of the job may not be empty') if name.empty?
-    raise(BazaRb::ValidationError, "The name #{name.inspect} is not valid") unless name.match?(/\A[a-z0-9-]+\z/)
-    raise(BazaRb::ValidationError, "The name #{name.inspect} is too long") if name.length > 32
+    valname(name)
     job = nil
     elapsed(@loog, level: Logger::INFO) do
       job = get(home.append('recent').append("#{name}.txt")).body.to_i
@@ -270,10 +265,7 @@ class BazaRb
   # @param [String] pname The name of the product on the server
   # @return [Boolean] TRUE if such name exists
   def name_exists?(pname)
-    raise(BazaRb::ValidationError, 'The "pname" of the product is nil') if pname.nil?
-    raise(BazaRb::ValidationError, 'The "pname" of the product may not be empty') if pname.empty?
-    raise(BazaRb::ValidationError, "The name #{pname.inspect} is not valid") unless pname.match?(/\A[a-z0-9-]+\z/)
-    raise(BazaRb::ValidationError, "The name #{pname.inspect} is too long") if pname.length > 32
+    valname(pname)
     exists = false
     elapsed(@loog, level: Logger::INFO) do
       exists = get(home.append('exists').append(pname)).body == 'yes'
@@ -324,7 +316,7 @@ class BazaRb
   # @param [Integer] chunk_size Maximum size of one chunk
   # @raise [ServerFailure] If the save operation fails
   def durable_save(id, file, chunk_size: DEFAULT_CHUNK_SIZE)
-    valid(id, context: 'durable')
+    valnum(id, context: 'durable')
     valfile(file, must_exist: true)
     elapsed(@loog, level: Logger::INFO) do
       upload(home.append('durables').append(id), file, chunk_size:)
@@ -338,7 +330,7 @@ class BazaRb
   # @param [String] file The local file path to save the downloaded durable
   # @raise [ServerFailure] If the load operation fails
   def durable_load(id, file)
-    valid(id, context: 'durable')
+    valnum(id, context: 'durable')
     valfile(file)
     elapsed(@loog, level: Logger::INFO) do
       download(home.append('durables').append(id), file)
@@ -352,7 +344,7 @@ class BazaRb
   # @param [String] owner The owner of the lock
   # @raise [ServerFailure] If the lock operation fails
   def durable_lock(id, owner)
-    valid(id, context: 'durable')
+    valnum(id, context: 'durable')
     valowner(owner)
     elapsed(@loog, level: Logger::INFO) do
       post(home.append('durables').append(id).append('lock'), { 'owner' => owner })
@@ -366,7 +358,7 @@ class BazaRb
   # @param [String] owner The owner of the lock
   # @raise [ServerFailure] If the unlock operation fails
   def durable_unlock(id, owner)
-    valid(id, context: 'durable')
+    valnum(id, context: 'durable')
     valowner(owner)
     elapsed(@loog, level: Logger::INFO) do
       post(home.append('durables').append(id).append('unlock'), { 'owner' => owner })
@@ -421,7 +413,7 @@ class BazaRb
     raise(BazaRb::ValidationError, 'The "amount" must be positive') unless amount.positive?
     raise(BazaRb::ValidationError, 'The "summary" is nil') if summary.nil?
     raise(BazaRb::ValidationError, "The summary #{summary.inspect} is empty") if summary.empty?
-    valid(job) unless job.nil?
+    valnum(job) unless job.nil?
     amt = amount.is_a?(BigDecimal) ? amount.truncate(6).to_s('F') : format('%0.6f', amount)
     id = nil
     body = { 'human' => recipient, 'amount' => amt, 'summary' => summary }
