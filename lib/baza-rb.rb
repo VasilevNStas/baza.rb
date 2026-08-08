@@ -308,6 +308,7 @@ class BazaRb
   # @param [String] pname The name of the product on the server
   # @param [String] file The path to the file to upload
   # @return [Integer] The ID of the created durable
+  # @raise [RuntimeError] If the file is a symlink, absent or too big
   # @raise [ServerFailure] If the upload fails
   def durable_place(pname, file)
     raise(RuntimeError, 'The "pname" of the durable is nil') if pname.nil?
@@ -315,31 +316,42 @@ class BazaRb
     raise(RuntimeError, "The name #{pname.inspect} is not valid") unless pname.match?(/\A[a-z0-9-]+\z/)
     raise(RuntimeError, "The name #{pname.inspect} is too long") if pname.length > 32
     raise(RuntimeError, 'The "file" of the durable is nil') if file.nil?
-    raise(RuntimeError, "The file '#{file}' is a symlink") if File.lstat(file).symlink?
-    id = nil
-    File.open(file, 'rb') do |f|
-      raise(RuntimeError, "The file '#{file}' is absent") unless f.stat.file?
-      if f.size > 1024
-        raise(
-          RuntimeError,
-          "The file '#{file}' is too big (#{f.size} bytes) for durable_place(), use durable_save() instead"
-        )
+    bytes =
+      begin
+        File.open(file, File::RDONLY | File::BINARY | File::NOFOLLOW) { |f| f.read(1025) }
+      rescue Errno::ELOOP, Errno::EMLINK
+        raise(RuntimeError, "The file '#{file}' is a symlink")
+      rescue Errno::ENOENT
+        raise(RuntimeError, "The file '#{file}' is absent")
+      rescue Errno::EISDIR
+        raise(RuntimeError, "The file '#{file}' is not a regular file")
+      rescue SystemCallError => e
+        raise(RuntimeError, "The file '#{file}' is not accessible: #{e.message}")
       end
+    if bytes.bytesize > 1024
+      raise(
+        RuntimeError,
+        "The file '#{file}' is too big (#{bytes.bytesize} bytes) for durable_place(), use durable_save() instead"
+      )
+    end
+    id = nil
+    Tempfile.open([File.basename(file, File.extname(file)), File.extname(file)]) do |zip|
+      zip.binmode
+      zip.write(bytes)
+      zip.flush
       elapsed(@loog, level: Logger::INFO) do
         id = post(
           home.append('durable-place'),
           {
             'pname' => pname,
             'file' => File.basename(file),
-            'zip' => f
+            'zip' => zip
           }
         ).headers['X-Zerocracy-DurableId'].to_i
-        throw(:"Durable ##{id} (#{file}, #{f.size} bytes) placed for job \"#{pname}\" at #{@host}")
+        throw(:"Durable ##{id} (#{file}, #{bytes.bytesize} bytes) placed for job \"#{pname}\" at #{@host}")
       end
     end
     id
-  rescue Errno::ENOENT
-    raise(RuntimeError, "The file '#{file}' is absent")
   end
 
   # Save a single durable from local file to server.
