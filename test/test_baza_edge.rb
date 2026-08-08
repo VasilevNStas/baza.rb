@@ -17,18 +17,35 @@ require 'webrick'
 require_relative 'test__helper'
 
 require_relative '../lib/baza-rb'
+require_relative '../lib/baza-rb/fake'
 
 # Edge case tests using WebMock for implementation-specific behavior.
 # Author:: Yegor Bugayenko (yegor256@gmail.com)
 # Copyright:: Copyright (c) 2024-2026 Yegor Bugayenko
 # License:: MIT
 class TestBazaRbEdge < Minitest::Test
-  def test_error_hierarchy
-    assert_operator(BazaRb::ValidationError, :<, BazaRb::Error)
-    assert_operator(BazaRb::ServerFailure, :<, BazaRb::Error)
-    assert_operator(BazaRb::TimedOut, :<, BazaRb::Error)
-    assert_operator(BazaRb::ConnectionFailed, :<, BazaRb::TimedOut)
-    assert_operator(BazaRb::BadCompression, :<, BazaRb::Error)
+  def test_all_errors_rescuable_as_one
+    assert_raises(BazaRb::Error) { fake_baza.push(nil, 'x', []) }
+    assert_raises(BazaRb::Error) { fake_baza.pull(42.5) }
+  end
+
+  def test_validation_error_is_runtime_error
+    assert_operator(BazaRb::ValidationError, :<, RuntimeError)
+  end
+
+  def test_fake_and_real_agree_on_error_class
+    assert_equal(
+      assert_raises(StandardError) { fake_baza.push('INVALID', 'd', []) }.class,
+      assert_raises(StandardError) { BazaRb::Fake.new.push('INVALID', 'd', []) }.class
+    )
+    assert_equal(
+      assert_raises(StandardError) { fake_baza.durable_place('proj', '/no/such/file') }.class,
+      assert_raises(StandardError) { BazaRb::Fake.new.durable_place('proj', '/no/such/file') }.class
+    )
+    assert_equal(
+      assert_raises(StandardError) { fake_baza.transfer(nil, 1.0, 'pay') }.class,
+      assert_raises(StandardError) { BazaRb::Fake.new.transfer(nil, 1.0, 'pay') }.class
+    )
   end
 
   def test_durable_place
@@ -283,7 +300,7 @@ class TestBazaRbEdge < Minitest::Test
         .with(headers: { 'Range' => 'bytes=0-' })
         .to_return(status: 206, body: 'x', headers: { 'Content-Range' => 'bytes 0/10' })
       assert_includes(
-        assert_raises(BazaRb::Error) do
+        assert_raises(BazaRb::ProtocolError) do
           fake_baza.durable_load(42, file)
         end.message, 'Range is not valid ("0")'
       )
@@ -298,7 +315,7 @@ class TestBazaRbEdge < Minitest::Test
         .with(headers: { 'Range' => 'bytes=0-' })
         .to_return(status: 206, body: 'x')
       assert_includes(
-        assert_raises(BazaRb::Error) do
+        assert_raises(BazaRb::ProtocolError) do
           fake_baza.durable_load(42, file)
         end.message, 'Content-Range header is missing'
       )
@@ -313,7 +330,7 @@ class TestBazaRbEdge < Minitest::Test
         .with(headers: { 'Range' => 'bytes=0-' })
         .to_return(status: 206, body: 'x', headers: { 'Content-Range' => 'bytes 0-499' })
       assert_includes(
-        assert_raises(BazaRb::Error) do
+        assert_raises(BazaRb::ProtocolError) do
           fake_baza.durable_load(42, file)
         end.message, 'Content-Range is not valid ("bytes 0-499")'
       )
@@ -518,7 +535,7 @@ class TestBazaRbEdge < Minitest::Test
         .with(headers: { 'Range' => 'bytes=0-' })
         .to_return(status: 206, body: 'x', headers: { 'Content-Range' => 'bytes 0-0/*malformed' })
       assert_includes(
-        assert_raises(BazaRb::Error) do
+        assert_raises(BazaRb::ProtocolError) do
           fake_baza.__send__(:download, fake_baza.__send__(:home).append('file'), file)
         end.message,
         'Total size is not valid ("*malformed")'
@@ -534,7 +551,7 @@ class TestBazaRbEdge < Minitest::Test
         .with(headers: { 'Range' => 'bytes=0-' })
         .to_return(status: 206, body: 'x', headers: { 'Content-Range' => "bytes 0-12\nfoo/100" })
       assert_includes(
-        assert_raises(BazaRb::Error) do
+        assert_raises(BazaRb::ProtocolError) do
           fake_baza.__send__(:download, fake_baza.__send__(:home).append('file'), file)
         end.message,
         'Range is not valid'
